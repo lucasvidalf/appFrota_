@@ -51,12 +51,15 @@
     background:#f9fafa; outline:none;
   }
   .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
-  @media (max-width:420px){ .filters{ grid-template-columns: 1fr } }
+  @media (max-width:420px){ 
+    .filters{ grid-template-columns: 1fr } 
+    #graficoPeriodo {height:250px;}
+  }
 
   .chart-card{ padding: 0 12px 12px; }
   .chart-wrap{
     position: relative; width: 100%;
-    height: clamp(420px, 32vh, 300px);
+    height: clamp(350px, 32vh, 300px);
     border-radius: var(--br-md);
     overflow-x: auto;
     background:#fff;
@@ -265,9 +268,9 @@
             x: {
               ticks: {
                 autoSkip: false,                 // vamos controlar manualmente
-                maxRotation: isMobile ? 25 : 45, // menos inclinado no mobile
+                maxRotation: isMobile ? 90 : 45, // menos inclinado no mobile
                 minRotation: 0,
-                font: { size: isMobile ? 9 : 11 },
+                font: { size: isMobile ? 10 : 11 },
                 // esconde rótulos alternados no mobile
                 callback: function(value, index, ticks) {
                   if (isMobile && index % 2 !== 0) return '';
