@@ -21,6 +21,7 @@
   }
   .app{ width:min(680px, 100%); margin:auto; }
 
+  /* Cabeçalho */
   .card-header{
     background:var(--brand-dark); color:#fff;
     padding: clamp(18px,5vw,28px) clamp(14px,4vw,20px);
@@ -31,6 +32,7 @@
   .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
   .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(13px,3.2vw,16px) }
 
+  /* Card base */
   .card{
     margin-top:12px; background:var(--white);
     border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden;
@@ -42,6 +44,7 @@
     padding:10px 14px; border-radius: var(--br-md);
   }
 
+  /* Filtros */
   .filters{ display:grid; gap:10px 12px; grid-template-columns: 1fr 1fr; padding:0 12px 6px; }
   .filters .field{ display:flex; flex-direction:column; gap:6px; }
   .label{ font-weight:800; letter-spacing:.3px }
@@ -51,21 +54,28 @@
     background:#f9fafa; outline:none;
   }
   .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
-  @media (max-width:640px){ 
-    .filters{ grid-template-columns: 1fr !important gap:12px } 
-    #graficoPeriodo {height:250px;}
+
+  /* Ajustes mobile */
+  @media (max-width:640px){
+    .filters{
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .chart-wrap{ height:300px; } /* um pouco mais baixo no mobile */
   }
 
+  /* Gráfico */
   .chart-card{ padding: 0 12px 12px; }
   .chart-wrap{
     position: relative; width: 100%;
-    height: clamp(350px, 32vh, 300px);
+    height: 350px;                         /* desktop (mobile sobrescreve acima) */
     border-radius: var(--br-md);
-    overflow-x: auto;
+    overflow-x: auto;                       /* scroll horizontal quando necessário */
     background:#fff;
   }
-  .chart-wrap canvas{ min-width: 500px; }
+  .chart-wrap canvas{ min-width:500px; display:block; } /* evita ‘inline’ desalinhando eixos */
 
+  /* Ações */
   .actions{
     display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
   }
@@ -93,6 +103,7 @@
     <section class="card chart-card" aria-label="Gráfico por Período">
       <h2 class="section-title">GRÁFICO POR PERÍODO</h2>
 
+      <!-- Filtros -->
       <div class="filters">
         <div class="field">
           <label class="label" for="dtIni">Data inicial</label>
@@ -113,10 +124,12 @@
         </div>
       </div><br><br>
 
+      <!-- Gráfico -->
       <div class="chart-wrap">
         <canvas id="graficoPeriodos"></canvas>
       </div>
 
+      <!-- Ações -->
       <div class="actions">
         <button class="btn secondary" id="btnRecarregar">Recarregar</button>
         <a href="index.html" class="link-btn">Voltar ao menu</a>
@@ -124,12 +137,13 @@
     </section>
   </main>
 
-  <!-- Chart.js + Annotation + DataLabels -->
+  <!-- Chart.js + DataLabels -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec'; // troque pelo seu
+    /* ===== CONFIG ===== */
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec'; // sua URL /exec
     const META = 12;
 
     const PERIODOS = [
@@ -171,48 +185,41 @@
       return json; // {labels, values, counts, mediaDia}
     }
 
+    /* === Largura/altura do canvas sem distorcer (mobile/desktop) === */
     function ajustarLarguraCanvas(labels){
       const canvas = document.getElementById('graficoPeriodos');
       const wrap   = document.querySelector('.chart-wrap');
-    
+
       const isMobile   = window.innerWidth <= 640;
-      const pxPorBarra = isMobile ? 44 : 36;   // espaço para cada rótulo
-      const minW       = isMobile ? 900 : 600; // largura mínima por plataforma
-    
-      // largura suficiente para caber todos os rótulos + scroll horizontal
+      const pxPorBarra = isMobile ? 44 : 36;   // espaço por rótulo
+      const minW       = isMobile ? 900 : 600; // largura mínima
+
       const w = Math.max(minW, labels.length * pxPorBarra);
-    
-      // altura real do bitmap (evita distorção dos ticks/barras)
-      const h = Math.max(260, (wrap?.clientHeight || 0));
-    
-      // defina atributos (tamanho interno do canvas)
-      canvas.width  = w;
+
+      const fallbackH = isMobile ? 280 : 320;
+      const h = Math.max(fallbackH, wrap ? wrap.clientHeight : 0);
+
+      canvas.width  = w;             // tamanho “real” do bitmap
       canvas.height = h;
-    
-      // e também o tamanho CSS (permite scroll quando passar da área)
-      canvas.style.width  = w + 'px';
+      canvas.style.width  = w + 'px';// tamanho CSS (permite scroll)
       canvas.style.height = h + 'px';
     }
 
     Chart.register(ChartDataLabels);
 
     function desenharGrafico(labels, values, counts){
-      // === regras para mobile ===
-      const isMobile = window.matchMedia('(max-width: 480px)').matches;
-    
-      // mantém a largura dinâmica do canvas (scroll horizontal continua ok)
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
       ajustarLarguraCanvas(labels);
-    
+
       const ctx = document.getElementById('graficoPeriodos').getContext('2d');
       if (window._chartPeriodos) window._chartPeriodos.destroy();
-    
-      const base      = '#3db7ac';
-      const destaque  = '#0b4c59';
-      const colors    = labels.map(l => l === 'Média Dia' ? destaque : base);
+
+      const base     = '#3db7ac';
+      const destaque = '#0b4c59';
+      const colors   = labels.map(l => l === 'Média Dia' ? destaque : base);
       const isMediaDia = (c) => c.chart.data.labels[c.dataIndex] === 'Média Dia';
-    
-      Chart.register(ChartDataLabels);
-    
+
       window._chartPeriodos = new Chart(ctx, {
         data: {
           labels,
@@ -235,10 +242,11 @@
                 offset:  (c) => isMediaDia(c) ? 0 : -4,
                 clamp: true,
                 formatter: (v) => (v % 1 === 0 ? v : v.toFixed(1)),
-                font: { weight: 800, size: isMobile ? 9 : 11 }  // <-- menor no mobile
+                font: { weight: 800, size: isMobile ? 9 : 11 }
               }
             },
             {
+              /* Linha da meta com item na legenda */
               type: 'line',
               label: `Meta ${META}`,
               data: new Array(labels.length).fill(META),
@@ -258,7 +266,10 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, font:{size:isMobile?11:12} }
+              labels: {
+                usePointStyle: true, pointStyle: 'rectRounded',
+                boxWidth: 10, boxHeight: 10, font:{size:isMobile?11:12}
+              }
             },
             tooltip: {
               callbacks: {
@@ -275,15 +286,10 @@
           scales: {
             x: {
               ticks: {
-                autoSkip: false,                 // vamos controlar manualmente
-                maxRotation: isMobile ? 90 : 45, // menos inclinado no mobile
-                minRotation: isMobile ? 90: 45,
-                font: { size: isMobile ? 10 : 11 },
-                // esconde rótulos alternados no mobile
-                callback: function(value, index, ticks) {
-                  if (isMobile && index % 2 !== 0) return '';
-                  return this.getLabelForValue(value);
-                }
+                autoSkip: false,                    // força mostrar todos
+                maxRotation: isMobile ? 65 : 45,
+                minRotation: isMobile ? 65 : 45,
+                font: { size: isMobile ? 10 : 11 }
               },
               grid: { display: false }
             },
@@ -296,7 +302,7 @@
           layout: { padding: { top: 6, right: 6, bottom: 6, left: 6 } }
         }
       });
-    }    
+    }
 
     async function carregarGrafico(){
       try{
