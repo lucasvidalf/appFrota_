@@ -240,7 +240,8 @@
                 offset:  (c) => isMediaDia(c) ? 0 : -4,
                 clamp: true,
                 formatter: (v) => Math.round(v),
-                font: { weight: 800, size: isMobile ? 9 : 11 }  // <-- menor no mobile
+				rotation: isMobile ? 90 : 45,
+                font: { weight: 800, size: isMobile ? 7 : 10 }  // <-- menor no mobile				
               }
             },
             {
