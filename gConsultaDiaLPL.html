@@ -51,8 +51,8 @@
     background:#f9fafa; outline:none;
   }
   .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
-  @media (min-width:620px){ 
-    .filters{ grid-template-columns: 1fr } 
+  @media (max-width:640px){ 
+    .filters{ grid-template-columns: 1fr !important gap:12px } 
     #graficoPeriodo {height:250px;}
   }
 
@@ -173,17 +173,25 @@
 
     function ajustarLarguraCanvas(labels){
       const canvas = document.getElementById('graficoPeriodos');
+      const wrap   = document.querySelector('.chart-wrap');
     
-      // Detecta se é mobile
-      const isMobile = window.innerWidth < 600;
+      const isMobile   = window.innerWidth <= 640;
+      const pxPorBarra = isMobile ? 44 : 36;   // espaço para cada rótulo
+      const minW       = isMobile ? 900 : 600; // largura mínima por plataforma
     
-      // largura mínima (desktop x mobile)
-      const min = isMobile ? 900 : 500;
+      // largura suficiente para caber todos os rótulos + scroll horizontal
+      const w = Math.max(minW, labels.length * pxPorBarra);
     
-      // calcula largura proporcional
-      const w = Math.max(min, labels.length * (isMobile ? 70 : 48));
+      // altura real do bitmap (evita distorção dos ticks/barras)
+      const h = Math.max(260, (wrap?.clientHeight || 0));
     
-      canvas.style.width = w + 'px';
+      // defina atributos (tamanho interno do canvas)
+      canvas.width  = w;
+      canvas.height = h;
+    
+      // e também o tamanho CSS (permite scroll quando passar da área)
+      canvas.style.width  = w + 'px';
+      canvas.style.height = h + 'px';
     }
 
     Chart.register(ChartDataLabels);
