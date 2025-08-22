@@ -51,7 +51,7 @@
     background:#f9fafa; outline:none;
   }
   .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
-  @media (max-width:420px){ 
+  @media (min-width:620px){ 
     .filters{ grid-template-columns: 1fr } 
     #graficoPeriodo {height:250px;}
   }
@@ -269,7 +269,7 @@
               ticks: {
                 autoSkip: false,                 // vamos controlar manualmente
                 maxRotation: isMobile ? 90 : 45, // menos inclinado no mobile
-                minRotation: isMobile ? 90: 0,
+                minRotation: isMobile ? 90: 45,
                 font: { size: isMobile ? 10 : 11 },
                 // esconde rótulos alternados no mobile
                 callback: function(value, index, ticks) {
