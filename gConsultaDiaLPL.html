@@ -57,7 +57,7 @@
       grid-template-columns: 1fr;
       gap: 12px;
     }
-    .chart-wrap{ height:300px; } /* um pouco mais baixo no mobile */
+    .chart-wrap{ height:280px; } /* um pouco mais baixo no mobile */
   }
 
   .chart-card{ padding: 0 12px 12px; }
@@ -68,7 +68,7 @@
     overflow-x: auto;
     background:#fff;
   }
-  .chart-wrap canvas{ min-width: 500px; }
+  .chart-wrap canvas{ min-width: 500px; display: block; }
 
   .actions{
     display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
@@ -180,24 +180,25 @@
       const wrap   = document.querySelector('.chart-wrap');
     
       const isMobile   = window.innerWidth <= 640;
-      const pxPorBarra = isMobile ? 44 : 36;   // espaço para cada rótulo
-      const minW       = isMobile ? 900 : 600; // largura mínima por plataforma
+      const pxPorBarra = isMobile ? 44 : 36;   // espaço por rótulo
+      const minW       = isMobile ? 900 : 600; // largura mínima
     
-      // largura suficiente para caber todos os rótulos + scroll horizontal
+      // largura suficiente para ver todos os rótulos (com scroll se precisar)
       const w = Math.max(minW, labels.length * pxPorBarra);
     
-      // altura real do bitmap (evita distorção dos ticks/barras)
-      const h = Math.max(260, (wrap?.clientHeight || 0));
+      // se o wrap ainda não tem altura, usa um fallback
+      const fallbackH = isMobile ? 280 : 320;
+      const h = Math.max(fallbackH, wrap ? wrap.clientHeight : 0);
     
-      // defina atributos (tamanho interno do canvas)
+      // define tamanho interno do bitmap (evita desalinhamento dos ticks)
       canvas.width  = w;
       canvas.height = h;
     
-      // e também o tamanho CSS (permite scroll quando passar da área)
+      // e o tamanho CSS (permite scroll horizontal quando necessário)
       canvas.style.width  = w + 'px';
       canvas.style.height = h + 'px';
     }
-
+    
     Chart.register(ChartDataLabels);
 
     function desenharGrafico(labels, values, counts){
@@ -281,11 +282,10 @@
               ticks: {
                 autoSkip: false,                 // vamos controlar manualmente
                 maxRotation: isMobile ? 90 : 45, // menos inclinado no mobile
-                minRotation: isMobile ? 90: 45,
+                minRotation: isMobile ? 90 : 45,
                 font: { size: isMobile ? 10 : 11 },
                 // esconde rótulos alternados no mobile
-                callback: function(value, index, ticks) {
-                  if (isMobile && index % 2 !== 0) return '';
+                callback: function(value) {                
                   return this.getLabelForValue(value);
                 }
               },
@@ -297,9 +297,14 @@
               ticks: { precision: 0, font: { size: isMobile ? 10 : 11 } }
             }
           },
-          layout: { padding: { top: 6, right: 6, bottom: 6, left: 6 } }
+          layout: { padding: { top: 6, right: 6, bottom: isMobile ? 60 : 50, left: 6 } }
         }
       });
+
+	window._chartPeriodos.options.scales.x.ticks.minRotation = 90;
+	window._chartPeriodos.options.scales.x.ticks.maxRotation = 90;
+	window._chartPeriodos.options.scales.x.ticks.autoSkip = false;
+	window._chartPeriodos.update();
     }    
 
     async function carregarGrafico(){
