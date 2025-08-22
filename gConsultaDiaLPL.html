@@ -269,7 +269,7 @@
               ticks: {
                 autoSkip: false,                 // vamos controlar manualmente
                 maxRotation: isMobile ? 90 : 45, // menos inclinado no mobile
-                minRotation: 0,
+                minRotation: isMobile ? 90: 0,
                 font: { size: isMobile ? 10 : 11 },
                 // esconde rótulos alternados no mobile
                 callback: function(value, index, ticks) {
