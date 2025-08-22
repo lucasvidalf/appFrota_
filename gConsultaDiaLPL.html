@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>DM — Gráfico por Período</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#e8fffb; --brand-dark:#0b4c59; --brand-mid:#3db7ac; --white:#fff; --text:#0b1f1e;
+    --shadow:0 8px 24px rgba(0,0,0,.08);
+    --br-lg:16px; --br-md:12px; --br-sm:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    padding: clamp(8px, 2vw, 16px);
+  }
+  .app{ width:min(680px, 100%); margin:auto; }
+
+  .card-header{
+    background:var(--brand-dark); color:#fff;
+    padding: clamp(18px,5vw,28px) clamp(14px,4vw,20px);
+    border-radius: var(--br-lg);
+    box-shadow: var(--shadow);
+    text-align:center;
+  }
+  .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
+  .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(13px,3.2vw,16px) }
+
+  .card{
+    margin-top:12px; background:var(--white);
+    border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden;
+  }
+  .card::before{ content:""; display:block; height:18px; background:var(--brand-mid) }
+  .section-title{
+    margin:12px; background:#3db7ac; color:#0b1f1e;
+    font-weight:800; letter-spacing:.4px;
+    padding:10px 14px; border-radius: var(--br-md);
+  }
+
+  .filters{ display:grid; gap:10px 12px; grid-template-columns: 1fr 1fr; padding:0 12px 6px; }
+  .filters .field{ display:flex; flex-direction:column; gap:6px; }
+  .label{ font-weight:800; letter-spacing:.3px }
+  .control{
+    display:block; width:100%; min-height:44px; font-size:16px;
+    padding:10px 12px; border:1px solid #cfd8dc; border-radius:var(--br-sm);
+    background:#f9fafa; outline:none;
+  }
+  .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
+  @media (max-width:420px){ .filters{ grid-template-columns: 1fr } }
+
+  .chart-card{ padding: 0 12px 12px; }
+  .chart-wrap{
+    position: relative; width: 100%;
+    height: clamp(420px, 32vh, 300px);
+    border-radius: var(--br-md);
+    overflow-x: auto;
+    background:#fff;
+  }
+  .chart-wrap canvas{ min-width: 500px; }
+
+  .actions{
+    display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
+  }
+  .btn{
+    border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
+    background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18);
+    transition:filter .15s ease;
+  }
+  .btn:hover{ filter:brightness(1.05) }
+  .btn.secondary{ background:#93b8b5; color:#062f2c }
+  .link-btn{
+    text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:12px; padding:12px 14px; font-weight:800; background:var(--brand-dark); color:#fff;
+    box-shadow:0 6px 14px rgba(1,61,53,.18);
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <header class="card-header">
+      <h1 class="title">EMPILHADEIRAS DISPONÍVEIS</h1>
+      <p class="subtitle">Gráfico por período (média)</p>
+    </header>
+
+    <section class="card chart-card" aria-label="Gráfico por Período">
+      <h2 class="section-title">GRÁFICO POR PERÍODO</h2>
+
+      <div class="filters">
+        <div class="field">
+          <label class="label" for="dtIni">Data inicial</label>
+          <input class="control" type="date" id="dtIni" />
+        </div>
+        <div class="field">
+          <label class="label" for="dtFim">Data final</label>
+          <input class="control" type="date" id="dtFim" />
+        </div>
+
+        <div class="field">
+          <label class="label" for="perIni">Período inicial</label>
+          <select class="control" id="perIni"></select>
+        </div>
+        <div class="field">
+          <label class="label" for="perFim">Período final</label>
+          <select class="control" id="perFim"></select>
+        </div>
+      </div><br><br>
+
+      <div class="chart-wrap">
+        <canvas id="graficoPeriodos"></canvas>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary" id="btnRecarregar">Recarregar</button>
+        <a href="index.html" class="link-btn">Voltar ao menu</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Chart.js + Annotation + DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec'; // troque pelo seu
+    const META = 12;
+
+    const PERIODOS = [
+      "00-01h","01-02h","02-03h","03-04h","04-05h","05-06h",
+      "06-07h","07-08h","08-09h","09-10h","10-11h","11-12h",
+      "12-13h","13-14h","14-15h","15-16h","16-17h","17-18h",
+      "18-19h","19-20h","20-21h","21-22h","22-23h","23-00h"
+    ];
+
+    function initPeriodos(){
+      const perIni = document.getElementById('perIni');
+      const perFim = document.getElementById('perFim');
+      perIni.add(new Option('— (todos) —',''));
+      perFim.add(new Option('— (todos) —',''));
+      PERIODOS.forEach(p=>{
+        perIni.add(new Option(p,p));
+        perFim.add(new Option(p,p));
+      });
+      perIni.value = '';
+      perFim.value = '';
+    }
+
+    async function fetchDados(){
+      const dtIni = document.getElementById('dtIni').value;
+      const dtFim = document.getElementById('dtFim').value;
+      const perIni = document.getElementById('perIni').value;
+      const perFim = document.getElementById('perFim').value;
+
+      const params = new URLSearchParams({
+        action: 'mediaDM',
+        dtIni, dtFim,
+        periodoIni: perIni,
+        periodoFim: perFim
+      });
+
+      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+      const json = await resp.json();
+      if(!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter dados');
+      return json; // {labels, values, counts, mediaDia}
+    }
+
+    function ajustarLarguraCanvas(labels){
+      const canvas = document.getElementById('graficoPeriodos');
+      const min = 500;
+      const w = Math.max(min, labels.length * 48);
+      canvas.style.width = w + 'px';
+    }
+
+    Chart.register(ChartDataLabels);
+
+    function desenharGrafico(labels, values, counts){
+      ajustarLarguraCanvas(labels);
+      const ctx = document.getElementById('graficoPeriodos').getContext('2d');
+      if (window._chartPeriodos) window._chartPeriodos.destroy();
+
+      const base = '#3db7ac';
+      const destaque = '#0b4c59';
+      const colors = labels.map(l => l === 'Média Dia' ? destaque : base);
+
+      const isMediaDia = (ctx) =>
+        ctx.chart.data.labels[ctx.dataIndex] === 'Média Dia';
+
+      window._chartPeriodos = new Chart(ctx, {
+        data: {
+          labels,
+          datasets: [
+            {
+              type: 'bar',
+              label:'Média Empilhadeiras',
+              data: values,
+              backgroundColor: colors,
+              borderColor: colors,
+              borderWidth: 1,
+              maxBarThickness: 28,
+              categoryPercentage: 0.82,
+              barPercentage: 0.82,
+              datalabels: {
+                display: (ctx) => ctx.datasetIndex === 0,
+                color:   (ctx) => isMediaDia(ctx) ? '#fff' : '#083735',
+                anchor:  (ctx) => isMediaDia(ctx) ? 'center' : 'end',
+                align:   (ctx) => isMediaDia(ctx) ? 'center' : 'end',
+                offset:  (ctx) => isMediaDia(ctx) ? 0 : -4,
+                clamp: true,
+                formatter: (v) => Math.round(v),
+                font: { weight: 800, size: 11 }
+              }
+            },
+            {
+              type: 'line',
+              label: `Meta ${META}`,
+              data: new Array(labels.length).fill(META),
+              borderColor: 'red',
+              borderWidth: 2,
+              borderDash: [4,3],
+              pointRadius: 0,
+              fill: false,
+              datalabels: { display: false }
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { usePointStyle: true, pointStyle: 'rectRounded' }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  if (ctx.dataset.type === 'line') return `${ctx.dataset.label}`;
+                  return ` Média: ${ctx.parsed.y}`;
+                },
+                afterLabel: (ctx) => {
+                  if (ctx.dataset.type === 'line') return '';
+                  const i = ctx.dataIndex;
+                  const c = (counts && counts[i]) || 0;
+                  return ` Registros: ${c}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { autoSkip: false, maxRotation: 45, minRotation: 0, font: { size: 11 } },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              suggestedMax: Math.max(META + 2, Math.ceil(Math.max(...values, META) + 1)),
+              ticks: { precision: 0, font: { size: 11 } }
+            }
+          },
+          layout: { padding: { top: 6, right: 6, bottom: 6, left: 6 } }
+        }
+      });
+    }
+
+    async function carregarGrafico(){
+      try{
+        const data = await fetchDados();
+        desenharGrafico(data.labels, data.values, data.counts);
+      }catch(err){
+        console.error(err);
+        alert('Não foi possível carregar o gráfico. Verifique a URL do Web App e tente novamente.');
+      }
+    }
+
+    document.getElementById('btnRecarregar').addEventListener('click', carregarGrafico);
+    initPeriodos();
+    carregarGrafico();
+  </script>
+</body>
+</html>
