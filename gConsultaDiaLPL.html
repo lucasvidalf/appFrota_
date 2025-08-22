@@ -179,7 +179,7 @@
         periodoFim: perFim
       });
 
-      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+      const resp = await fetch(${SCRIPT_URL}?${params.toString()});
       const json = await resp.json();
       if(!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter dados');
       return json; // {labels, values, counts, mediaDia}
@@ -248,7 +248,7 @@
             {
               /* Linha da meta com item na legenda */
               type: 'line',
-              label: `Meta ${META}`,
+              label: Meta ${META},
               data: new Array(labels.length).fill(META),
               borderColor: 'red',
               borderWidth: 2,
@@ -273,7 +273,7 @@
             },
             tooltip: {
               callbacks: {
-                label: (c) => c.dataset.type === 'line' ? `${c.dataset.label}` : ` Média: ${c.parsed.y}`,
+                label: (c) => c.dataset.type === 'line' ? ${c.dataset.label} : ` Média: ${c.parsed.y}`,
                 afterLabel: (c) => {
                   if (c.dataset.type === 'line') return '';
                   const i = c.dataIndex;
