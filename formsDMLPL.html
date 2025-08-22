@@ -120,6 +120,8 @@
     @media (max-width:420px){.app{padding:12px}.radio-group{grid-template-columns:1fr}}
   </style>
 </head>
+<!-- ... <head> e CSS permanecem como você enviou, mas troque "período/períodos" por "periodo/periodos" ... -->
+
 <body>
   <main class="app">
     <header class="card-header">
@@ -127,21 +129,19 @@
       <p class="subtitle">DISPONIBILIDADE MECÂNICA</p>
     </header>
 
-    <section class="card" aria-label="Formulário de OS">
+    <section class="card" aria-label="Formulário">
       <form id="form-os" action="#" method="post">
         <!-- DATA -->
         <h2 class="section-title">DATA</h2>
         <div class="field">
-          <label for="dt-os" class="label"></label>
           <input id="dt-os" class="control" type="datetime-local" required placeholder="dd/mm/aaaa --:--"/>
-        </div>        
+        </div>
 
-        <!-- TIPO DE OS -->
-       <h2 class="section-title">PERÍODO</h2>
+        <!-- PERÍODO -->
+        <h2 class="section-title">PERÍODO</h2>
         <div class="field">
-          <label for="período" class="label"></label>
-          <input id="período" name="período" class="control" list="períodos" required placeholder="Digite ou escolha" />
-          <datalist id="períodos">
+          <input id="periodo" name="periodo" class="control" list="periodos" required placeholder="Digite ou escolha" />
+          <datalist id="periodos">
             <option value="00-01h"><option value="01-02h"><option value="02-03h"><option value="03-04h">
             <option value="04-05h"><option value="05-06h"><option value="06-07h"><option value="07-08h">
             <option value="08-09h"><option value="09-10h"><option value="10-11h"><option value="11-12h"><option value="12-13h">
@@ -151,11 +151,10 @@
           </datalist>
         </div>
 
-        
+        <!-- DISPONÍVEIS -->
         <h2 class="section-title">EMPILHADEIRAS DISPONÍVEIS</h2>
         <div class="field">
-          <div class="emp-grid" role="group" aria-labelledby="emp-label">         
-            <!-- Coloque quantas quiser; ficam 2 por linha -->
+          <div class="emp-grid" role="group" aria-labelledby="emp-disp">
             <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0021"><span>EMP0021</span></label>
             <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0039"><span>EMP0039</span></label>
             <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0046"><span>EMP0046</span></label>
@@ -168,17 +167,17 @@
             <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0096"><span>EMP0096</span></label>
             <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0097"><span>EMP0097</span></label>
             <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0098"><span>EMP0098</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0099"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0111"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0112"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0188"><span>EMP0039</span></label>        
+            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0099"><span>EMP0099</span></label>
+            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0111"><span>EMP0111</span></label>
+            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0112"><span>EMP0112</span></label>
+            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0188"><span>EMP0188</span></label>
           </div>
         </div>
 
+        <!-- MANUTENÇÃO -->
         <h2 class="section-title">EMPILHADEIRAS EM MANUTENÇÃO</h2>
         <div class="field">
-          <div class="emp-grid" role="group" aria-labelledby="emp-label">         
-            <!-- Coloque quantas quiser; ficam 2 por linha -->
+          <div class="emp-grid" role="group" aria-labelledby="emp-man">
             <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0021"><span>EMP0021</span></label>
             <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0039"><span>EMP0039</span></label>
             <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0046"><span>EMP0046</span></label>
@@ -191,62 +190,54 @@
             <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0096"><span>EMP0096</span></label>
             <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0097"><span>EMP0097</span></label>
             <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0098"><span>EMP0098</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0099"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0111"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0112"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0188"><span>EMP0039</span></label>        
+            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0099"><span>EMP0099</span></label>
+            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0111"><span>EMP0111</span></label>
+            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0112"><span>EMP0112</span></label>
+            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0188"><span>EMP0188</span></label>
           </div>
         </div>
 
-       
         <div class="actions">
           <button class="btn" id="btnRef" type="submit">Registrar</button>
         </div>
       </form>
-      <a class="tile" href="./index.html">⬅️VOLTAR AO MENU</a>
-          <a class="tile" href="#">🚪SAIR</a>
+
+      <a class="tile" href="./index.html">⬅️ VOLTAR AO MENU</a>
+      <a class="tile" href="#">🚪 SAIR</a>
     </section>
   </main>
 
   <script>
-    // ===== CONFIG =====
-    <script>
-    // ===== CONFIG =====
     const API_URL = "https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec";
 
     const form = document.getElementById('form-os');
-    const btn = document.getElementById('btnRef');
+    const btn  = document.getElementById('btnRef');
 
     function limparCampos(){
       form.reset();
-      // Em iOS, reset não limpa datetime; força limpeza:
       document.getElementById('dt-os').value = '';
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Validação simples
-      const empDisp = Array.from(document.querySelectorAll('input[name="empDisp"]:checked')).map(cb => cb.value);
+      // coleta checkboxes → string "EMP0039, EMP0046"
+      const empDisp = Array.from(document.querySelectorAll('input[name="empDisp"]:checked'))
+        .map(cb => cb.value).join(', ');
+      const empMan  = Array.from(document.querySelectorAll('input[name="empMan"]:checked'))
+        .map(cb => cb.value).join(', ');
 
-      const empMan = Array.from(document.querySelectorAll('input[name="empMan"]:checked')).map(cb => cb.value);
-     }
-
-      // Monta payload exatamente com os nomes das colunas da planilha
       const dados = {
-        data: document.getElementById('dt-os').value,           // A
-        periodo: document.getElementById('período').value,          // B
-        empilhadeiras_disponíveis: empDisp,
-        empilhadeiras_em_manutencao: empMan, // C
-        
-       
+        data: document.getElementById('dt-os').value,
+        periodo: document.getElementById('periodo').value,
+        empilhadeiras_disponiveis: empDisp,
+        empilhadeiras_em_manutencao: empMan
       };
 
       btn.disabled = true;
       btn.textContent = 'Enviando...';
 
       try {
-        // Envia como x-www-form-urlencoded (não dispara preflight/CORS)
         const body = 'dados=' + encodeURIComponent(JSON.stringify({
           action: 'salvarDMLPL',
           dados
