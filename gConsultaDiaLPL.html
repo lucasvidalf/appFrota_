@@ -170,8 +170,16 @@
 
     function ajustarLarguraCanvas(labels){
       const canvas = document.getElementById('graficoPeriodos');
-      const min = 500;
-      const w = Math.max(min, labels.length * 48);
+    
+      // Detecta se é mobile
+      const isMobile = window.innerWidth < 600;
+    
+      // largura mínima (desktop x mobile)
+      const min = isMobile ? 900 : 500;
+    
+      // calcula largura proporcional
+      const w = Math.max(min, labels.length * (isMobile ? 70 : 48));
+    
       canvas.style.width = w + 'px';
     }
 
