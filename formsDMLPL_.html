@@ -135,7 +135,7 @@
     </header>
 
     <!-- 1) GERENCIAR LISTA DE EMPILHADEIRAS -->
-    <section class="card" aria-label="Gerenciar Frota">
+    <section id="secGerenciar" class="card" aria-label="Gerenciar Frota">
       <h2 class="section-title">
         <span>LISTA DE EMPILHADEIRAS (Gerenciar)</span>
         <small class="muted"><span id="totalPlacas">0</span> placas • <span id="infoAtualizacao">—</span></small>
@@ -382,6 +382,11 @@
         // Libera etapa 2
         listaFoiSalva = true;
         document.getElementById('secClassificacao').classList.remove('hidden');
+
+        // Esconde gerenciar
+        document.getElementById('secGerenciar').classList.add('hidden');
+        document.getElementById('secClassificacao').scrollIntoView({ behavior:'smooth', block:'start'});
+        
         // zera seleções e renderiza a partir da lista salva
         DISP.clear(); MAN.clear();
         renderGrids();
