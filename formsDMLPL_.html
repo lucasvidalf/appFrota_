@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>DM — Empilhadeiras (Gerenciar + Disponibilidade)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#e8fffb; --brand-dark:#0b4c59; --brand-mid:#3db7ac; --white:#fff; --text:#0b1f1e;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --br-lg:16px; --br-md:12px; --br-sm:10px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      display:flex; align-items:center; justify-content:center;
+      padding: clamp(8px, 2vw, 16px);
+    }
+    .app{ width:min(680px, 100%); margin:auto; }
+
+    /* Cabeçalho */
+    .card-header{
+      background:var(--brand-dark); color:#fff;
+      padding: clamp(18px,5vw,28px) clamp(14px,4vw,20px);
+      border-radius: var(--br-lg);
+      box-shadow: var(--shadow);
+      text-align:center;
+    }
+    .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
+    .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(13px,3.2vw,16px) }
+
+    /* Cards */
+    .card{
+      margin-top:12px; background:var(--white);
+      border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden;
+    }
+    .card::before{ content:""; display:block; height:18px; background:var(--brand-mid) }
+    .section-title{
+      margin:12px; background:#3db7ac; color:#0b1f1e;
+      font-weight:800; letter-spacing:.4px;
+      padding:10px 14px; border-radius: var(--br-md);
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .section-title small{ font-weight:600; opacity:.9 }
+    .muted{ opacity:.85; font-weight:700 }
+
+    .section-body{ padding: 0 12px 12px; }
+    .field{ margin-bottom:12px }
+    .label{ font-weight:800; letter-spacing:.3px; margin-bottom:6px; display:block }
+    .control{
+      display:block; width:100%; min-height:44px; font-size:16px;
+      padding:10px 12px; border:1px solid #cfd8dc; border-radius:var(--br-sm);
+      background:#f9fafa; outline:none;
+    }
+    .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
+
+    /* Pills (gerenciar frota) */
+    .pill-wrap{
+      display:flex; flex-wrap:wrap; gap:8px;
+      padding:8px; background:#f6fafa; border:1px dashed #cfd8dc; border-radius:12px;
+      max-height: 220px; overflow:auto;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; background:#fff; border:1px solid #cfd8dc;
+      border-radius:999px; font-weight:700;
+    }
+    .pill button{
+      border:0; background:#ffeaea; color:#a10; border-radius:999px; cursor:pointer;
+      width:22px; height:22px; line-height:22px; font-weight:900;
+    }
+    .inline-add{
+      display:flex; gap:8px; align-items:center;
+      margin-top:10px;
+    }
+    .inline-add input{ flex:1 }
+    .inline-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px }
+
+    .btn{
+      border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
+      background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18);
+      transition:filter .15s ease;
+    }
+    .btn:hover{ filter:brightness(1.05) }
+    .btn.secondary{ background:#93b8b5; color:#062f2c }
+    .btn.ghost{ background:#eef6f5; color:#063a36 }
+
+    /* Grids (checkbox pills) */
+    .emp-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px 14px;
+      align-items:start;
+    }
+    @media (max-width:520px){
+      .emp-grid{ grid-template-columns: 1fr }
+    }
+    .check-pill{
+      display:flex; align-items:center; gap:10px;
+      padding:12px 14px;
+      background:#f9fbfb;
+      border:1px solid #cfd8dc;
+      border-radius:12px;
+      min-height:46px;
+      transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .check-pill input[type="checkbox"]{
+      width:18px; height:18px; accent-color:#0b4c59;
+    }
+    .check-pill span{ letter-spacing:.3px; color:#0b1f1e; font-weight:700 }
+    .check-pill:has(input:checked){
+      background:#fff; border-color:#3db7ac; box-shadow:0 0 0 3px rgba(61,183,172,.22);
+    }
+
+    .actions{
+      display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
+    }
+
+    .hidden{ display:none !important; }
+    @media (max-width:640px){
+      .section-title{ flex-wrap:wrap; gap:6px }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <!-- Cabeçalho -->
+    <header class="card-header">
+      <h1 class="title">EMPILHADEIRAS — Disponibilidade</h1>
+      <p class="subtitle">1) Gerencie a lista de placas · 2) Classifique como Disponível ou Manutenção</p>
+    </header>
+
+    <!-- 1) GERENCIAR LISTA DE EMPILHADEIRAS -->
+    <section class="card" aria-label="Gerenciar Frota">
+      <h2 class="section-title">
+        <span>LISTA DE EMPILHADEIRAS (Gerenciar)</span>
+        <small class="muted"><span id="totalPlacas">0</span> placas • <span id="infoAtualizacao">—</span></small>
+      </h2>
+      <div class="section-body">
+        <div id="pillContainer" class="pill-wrap" aria-live="polite"></div>
+
+        <div class="inline-add">
+          <input id="novoCodigo" class="control" placeholder="Adicionar código (ex.: EMP0092)" />
+          <button class="btn ghost" id="btnAdicionar">Adicionar</button>
+        </div>
+
+        <div class="inline-actions">
+          <button class="btn secondary" id="btnRecarregarLista">Recarregar do servidor</button>
+          <button class="btn" id="btnSalvarLista">Salvar lista</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) CLASSIFICAÇÃO: DISPONÍVEIS x MANUTENÇÃO (só aparece após SALVAR LISTA) -->
+    <section id="secClassificacao" class="card hidden" aria-label="Classificação">
+      <h2 class="section-title">
+        <span>EMPILHADEIRAS DISPONÍVEIS</span>
+        <small id="countDisp">0</small>
+      </h2>
+      <div class="section-body">
+        <div id="gridDisp" class="emp-grid"></div>
+      </div>
+
+      <h2 class="section-title">
+        <span>EMPILHADEIRAS EM MANUTENÇÃO</span>
+        <small id="countMan">0</small>
+      </h2>
+      <div class="section-body">
+        <div id="gridMan" class="emp-grid"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary" id="btnLimparSelecao">Limpar seleção</button>
+        <button class="btn" id="btnRegistrar">Registrar</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /************ CONFIG ************/
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec'; // sua URL /exec
+
+    // Estado
+    let FROTA = [];        // lista “viva” de códigos
+    let DISP  = new Set(); // selecionados como disponíveis
+    let MAN   = new Set(); // selecionados como manutenção
+    let listaFoiSalva = false; // controla quando liberar a classificação
+
+    /************ UTIL ************/
+    const pad = n => String(n).padStart(2,'0');
+    const slug = s => String(s||'').trim().toUpperCase().replace(/\s+/g,'');
+
+    function sortPlacas(arr){
+      return [...arr].sort((a,b)=>{
+        const ma = a.match(/\d+/), mb = b.match(/\d+/);
+        const na = ma ? Number(ma[0]) : Infinity;
+        const nb = mb ? Number(mb[0]) : Infinity;
+        if (na !== nb) return na - nb;
+        return a.localeCompare(b);
+      });
+    }
+    function formatTS(ts){
+      if (!ts) return '';
+      try{
+        const d = (ts instanceof Date) ? ts : new Date(ts);
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }catch(e){ return String(ts); }
+    }
+    const setInfoAtualizacao = (str) => document.getElementById('infoAtualizacao').textContent = str || '—';
+    const setTotalPlacas = () => document.getElementById('totalPlacas').textContent = FROTA.length;
+
+    /************ RENDER ************/
+    function renderPills(){
+      const wrap = document.getElementById('pillContainer');
+      wrap.innerHTML = '';
+      sortPlacas(FROTA).forEach(code=>{
+        const pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.innerHTML = `
+          <strong>${code}</strong>
+          <button type="button" aria-label="Remover ${code}">&times;</button>
+        `;
+        pill.querySelector('button').addEventListener('click', ()=>{
+          FROTA = FROTA.filter(c => c !== code);
+          DISP.delete(code);
+          MAN.delete(code);
+          renderPills();
+          if (listaFoiSalva) renderGrids(); // se já liberamos a etapa 2, atualiza também lá
+        });
+        wrap.appendChild(pill);
+      });
+      setTotalPlacas();
+    }
+
+    // cria um checkbox "pílula"
+    function makeCheck(code, grupo){
+      const id = `${grupo}-${code}`;
+      const lbl = document.createElement('label');
+      lbl.className = 'check-pill';
+      lbl.innerHTML = `
+        <input type="checkbox" id="${id}" />
+        <span>${code}</span>
+      `;
+      const input = lbl.querySelector('input');
+
+      if (grupo === 'disp') input.checked = DISP.has(code);
+      if (grupo === 'man')  input.checked = MAN.has(code);
+
+      input.addEventListener('change', ()=>{
+        if (grupo === 'disp'){
+          if (input.checked){ DISP.add(code); MAN.delete(code); }
+          else { DISP.delete(code); }
+        } else {
+          if (input.checked){ MAN.add(code); DISP.delete(code); }
+          else { MAN.delete(code); }
+        }
+        // como as listas são exclusivas, ao mudar precisamos re-renderizar para
+        // mover/remover o card da outra lista
+        renderGrids();
+      });
+
+      return lbl;
+    }
+
+    // Mostra cada placa em APENAS UMA lista:
+    // - gridDisp: FROTA - MAN
+    // - gridMan : FROTA - DISP
+    function renderGrids(){
+      const gridD = document.getElementById('gridDisp');
+      const gridM = document.getElementById('gridMan');
+      gridD.innerHTML = '';
+      gridM.innerHTML = '';
+
+      const dispList = sortPlacas(FROTA.filter(c => !MAN.has(c)));
+      const manList  = sortPlacas(FROTA.filter(c => !DISP.has(c)));
+
+      dispList.forEach(code => gridD.appendChild(makeCheck(code, 'disp')));
+      manList.forEach(code  => gridM.appendChild(makeCheck(code, 'man')));
+
+      updateCounts();
+    }
+
+    function updateCounts(){
+      document.getElementById('countDisp').textContent = DISP.size;
+      document.getElementById('countMan').textContent  = MAN.size;
+    }
+
+    function validarSelecao(){
+      const faltantes = [];
+      const duplicados = [];
+      FROTA.forEach(code=>{
+        const emDisp = DISP.has(code);
+        const emMan  = MAN.has(code);
+        if (!emDisp && !emMan) faltantes.push(code);
+        if (emDisp && emMan)  duplicados.push(code);
+      });
+      if (faltantes.length){
+        alert(`⚠️ Existem empilhadeiras sem status (nem disponível, nem manutenção):\n• ${faltantes.join(', ')}`);
+        return false;
+      }
+      if (duplicados.length){
+        alert(`⚠️ Existem empilhadeiras com status duplicado:\n• ${duplicados.join(', ')}`);
+        return false;
+      }
+      return true;
+    }
+
+    /************ API ************/
+    async function apiGetFrota(){
+      const params = new URLSearchParams({ action: 'getFrotaLPL' });
+      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`, { cache:'no-store' });
+      const json = await resp.json();
+      if (!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter frota');
+      return {
+        frota: json.empilhadeiras || [],
+        atualizadoEm: json.timestamp ? formatTS(json.timestamp) : ''
+      };
+    }
+
+    async function apiSalvarFrota(frotaArr){
+      const body = 'dados=' + encodeURIComponent(JSON.stringify({
+        action: 'salvarFrotaLPL',
+        dados: { lista: frotaArr }
+      }));
+      const resp = await fetch(SCRIPT_URL, {
+        method:'POST',
+        headers:{ 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
+      const json = await resp.json();
+      if (!json.sucesso) throw new Error(json.mensagem || 'Falha ao salvar frota');
+      return { sucesso:true, atualizadoEm: formatTS(new Date()) };
+    }
+
+    async function apiRegistrarSelecao(payload){
+      const body = 'dados=' + encodeURIComponent(JSON.stringify({
+        action: 'salvarDMLPL',
+        dados: payload
+      }));
+      const resp = await fetch(SCRIPT_URL, {
+        method:'POST',
+        headers:{ 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
+      const json = await resp.json();
+      if (!json.sucesso) throw new Error(json.mensagem || 'Falha ao registrar DM');
+      return json;
+    }
+
+    /************ HANDLERS UI ************/
+    document.getElementById('btnAdicionar').addEventListener('click', ()=>{
+      const raw = document.getElementById('novoCodigo').value;
+      const code = slug(raw);
+      if (!code){ alert('Informe um código (ex.: EMP0092).'); return; }
+
+      // validação leve
+      if (!/^EMP\d{3,5}$/.test(code)) {
+        if (!confirm('Código fora do padrão EMP0000. Deseja adicionar mesmo assim?')) return;
+      }
+      if (FROTA.includes(code)){
+        alert('Este código já está na lista.');
+        return;
+      }
+      FROTA.push(code);
+      document.getElementById('novoCodigo').value = '';
+      renderPills();
+      // ainda não libera classificação; só depois de SALVAR
+    });
+
+    document.getElementById('btnSalvarLista').addEventListener('click', async ()=>{
+      if (!FROTA.length){ alert('A lista está vazia.'); return; }
+      try{
+        const ordenada = sortPlacas(FROTA);
+        const r = await apiSalvarFrota(ordenada);
+        setInfoAtualizacao(r.atualizadoEm || 'agora');
+        alert('✅ Lista salva com sucesso! A classificação foi liberada.');
+
+        // Libera etapa 2
+        listaFoiSalva = true;
+        document.getElementById('secClassificacao').classList.remove('hidden');
+        // zera seleções e renderiza a partir da lista salva
+        DISP.clear(); MAN.clear();
+        renderGrids();
+      }catch(err){
+        console.error(err);
+        alert('❌ Não foi possível salvar a lista.');
+      }
+    });
+
+    document.getElementById('btnRecarregarLista').addEventListener('click', async ()=>{
+      try{
+        const data = await apiGetFrota();
+        FROTA = data.frota || [];
+        setInfoAtualizacao(data.atualizadoEm || '—');
+        renderPills();
+
+        // Se já estava liberada a etapa 2, atualiza também
+        if (listaFoiSalva){
+          DISP.clear(); MAN.clear();
+          renderGrids();
+        }
+      }catch(err){
+        console.error(err);
+        alert('❌ Não foi possível recarregar a lista.');
+      }
+    });
+
+    document.getElementById('btnLimparSelecao').addEventListener('click', ()=>{
+      DISP.clear(); MAN.clear();
+      renderGrids();
+    });
+
+    document.getElementById('btnRegistrar').addEventListener('click', async ()=>{
+      if (!validarSelecao()) return;
+
+      const agora = new Date();
+      const iso = `${agora.getFullYear()}-${pad(agora.getMonth()+1)}-${pad(agora.getDate())} ${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
+
+      const payload = {
+        data: iso,
+        periodo: '',
+        empilhadeiras_disponiveis: Array.from(DISP).join(','),
+        empilhadeiras_em_manutencao: Array.from(MAN).join(',')
+      };
+
+      try{
+        await apiRegistrarSelecao(payload);
+        alert('✅ Registro DM salvo com sucesso!');
+      }catch(err){
+        console.error(err);
+        alert('❌ Não foi possível salvar o registro DM.');
+      }
+    });
+
+    /************ BOOT ************/
+    (async function init(){
+      try{
+        const data = await apiGetFrota();
+        FROTA = data.frota || [];
+        setInfoAtualizacao(data.atualizadoEm || '—');
+      }catch(err){
+        console.warn('Sem lista no servidor; carregando exemplo...');
+        FROTA = ['EMP0021','EMP0039','EMP0046','EMP0053','EMP0078','EMP0091','EMP0092','EMP0093','EMP0095','EMP0096','EMP0097','EMP0098','EMP0099','EMP0111','EMP0112','EMP0188'];
+        setInfoAtualizacao('lista local (fallback)');
+      }
+      renderPills();
+
+      // por padrão, a seção de classificação fica escondida
+      // e só aparece após "Salvar lista"
+      document.getElementById('secClassificacao').classList.add('hidden');
+    })();
+  </script>
+</body>
+</html>
