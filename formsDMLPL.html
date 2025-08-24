@@ -151,50 +151,14 @@
           </datalist>
         </div>
 
-        <!-- DISPONÍVEIS -->
         <h2 class="section-title">EMPILHADEIRAS DISPONÍVEIS</h2>
         <div class="field">
-          <div class="emp-grid" role="group" aria-labelledby="emp-disp">
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0021"><span>EMP0021</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0039"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0046"><span>EMP0046</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0053"><span>EMP0053</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0078"><span>EMP0078</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0091"><span>EMP0091</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0092"><span>EMP0092</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0093"><span>EMP0093</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0095"><span>EMP0095</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0096"><span>EMP0096</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0097"><span>EMP0097</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0098"><span>EMP0098</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0099"><span>EMP0099</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0111"><span>EMP0111</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0112"><span>EMP0112</span></label>
-            <label class="check-pill"><input type="checkbox" name="empDisp" value="EMP0188"><span>EMP0188</span></label>
-          </div>
+        <div id="listDisp" class="emp-grid" role="group" aria-labelledby="emp-disp-label"></div>
         </div>
 
-        <!-- MANUTENÇÃO -->
         <h2 class="section-title">EMPILHADEIRAS EM MANUTENÇÃO</h2>
         <div class="field">
-          <div class="emp-grid" role="group" aria-labelledby="emp-man">
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0021"><span>EMP0021</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0039"><span>EMP0039</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0046"><span>EMP0046</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0053"><span>EMP0053</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0078"><span>EMP0078</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0091"><span>EMP0091</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0092"><span>EMP0092</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0093"><span>EMP0093</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0095"><span>EMP0095</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0096"><span>EMP0096</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0097"><span>EMP0097</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0098"><span>EMP0098</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0099"><span>EMP0099</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0111"><span>EMP0111</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0112"><span>EMP0112</span></label>
-            <label class="check-pill"><input type="checkbox" name="empMan" value="EMP0188"><span>EMP0188</span></label>
-          </div>
+        <div id="listMan" class="emp-grid" role="group" aria-labelledby="emp-man-label"></div>
         </div>
 
         <div class="actions">
@@ -207,64 +171,164 @@
     </section>
   </main>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec";
+  <!-- ...todo o seu <head> e HTML iguais... -->
 
-    const form = document.getElementById('form-os');
-    const btn  = document.getElementById('btnRef');
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec";
 
-    function limparCampos(){
-      form.reset();
-      document.getElementById('dt-os').value = '';
-    }
+        const form = document.getElementById('form-os');
+        const btn  = document.getElementById('btnRef');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+        const EMPILHADEIRAS = [
+            "EMP0021","EMP0039","EMP0046","EMP0053","EMP0078","EMP0091",
+            "EMP0092","EMP0093","EMP0095","EMP0096","EMP0097","EMP0098",
+            "EMP0099","EMP0111","EMP0112","EMP0188"
+        ];
 
-      // coleta checkboxes → string "EMP0039, EMP0046"
-      const empDisp = Array.from(document.querySelectorAll('input[name="empDisp"]:checked'))
-        .map(cb => cb.value).join(', ');
-      const empMan  = Array.from(document.querySelectorAll('input[name="empMan"]:checked'))
-        .map(cb => cb.value).join(', ');
+        // conjuntos atuais
+        const selDisp = new Set(); // marcadas em Disponíveis
+        const selMan  = new Set(); // marcadas em Manutenção
 
-      const dados = {
-        data: document.getElementById('dt-os').value,
-        periodo: document.getElementById('periodo').value,
-        empilhadeiras_disponiveis: empDisp,
-        empilhadeiras_em_manutencao: empMan
-      };
+        // ----- renderização dinâmica das listas -----
+        function renderLists() {
+            const disp = EMPILHADEIRAS.filter(id => !selMan.has(id));
+            const man  = EMPILHADEIRAS.filter(id => !selDisp.has(id));
 
-      btn.disabled = true;
-      btn.textContent = 'Enviando...';
+            renderGroup('listDisp', disp, selDisp, 'empDisp');
+            renderGroup('listMan',  man,  selMan,  'empMan');
 
-      try {
-        const body = 'dados=' + encodeURIComponent(JSON.stringify({
-          action: 'salvarDMLPL',
-          dados
-        }));
+            atualizarContadores();
+        }
 
-        const resp = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body
+        function renderGroup(containerId, ids, selectedSet, inputName) {
+            const el = document.getElementById(containerId);
+            el.innerHTML = '';
+
+            for (const id of ids) {
+            const label = document.createElement('label');
+            label.className = 'check-pill';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = inputName;
+            input.value = id;
+            input.checked = selectedSet.has(id);
+
+            const span = document.createElement('span');
+            span.textContent = id;
+
+            input.addEventListener('change', () => {
+                if (input.checked) {
+                selectedSet.add(id);
+                // exclusão cruzada
+                if (inputName === 'empDisp') selMan.delete(id);
+                if (inputName === 'empMan')  selDisp.delete(id);
+                } else {
+                selectedSet.delete(id);
+                }
+                renderLists();
+            });
+
+            label.appendChild(input);
+            label.appendChild(span);
+            el.appendChild(label);
+            }
+        }
+
+        // ----- contadores (opcional) -----
+        function atualizarContadores(){
+            const h2s = [...document.querySelectorAll('.section-title')];
+            const total = EMPILHADEIRAS.length;
+            // assume a ordem: DATA, PERÍODO, DISPONÍVEIS, MANUTENÇÃO
+            if (h2s[2]) h2s[2].textContent = `EMPILHADEIRAS DISPONÍVEIS (${selDisp.size}/${total})`;
+            if (h2s[3]) h2s[3].textContent = `EMPILHADEIRAS EM MANUTENÇÃO (${selMan.size}/${total})`;
+        }
+
+        // ----- helpers submit/validação -----
+        function getSelecoesAtuais(){
+            const disp = new Set(
+            Array.from(document.querySelectorAll('input[name="empDisp"]:checked')).map(i => i.value)
+            );
+            const man  = new Set(
+            Array.from(document.querySelectorAll('input[name="empMan"]:checked')).map(i => i.value)
+            );
+            return { disp, man };
+        }
+
+        function limparCampos(){
+            form.reset();
+            document.getElementById('dt-os').value = '';
+            selDisp.clear();
+            selMan.clear();
+            renderLists();
+        }
+
+        // ----- validação + envio -----
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const { disp, man } = getSelecoesAtuais();
+            const duplicadas = EMPILHADEIRAS.filter(id => disp.has(id) && man.has(id));
+            const faltantes  = EMPILHADEIRAS.filter(id => !disp.has(id) && !man.has(id));
+
+            if (duplicadas.length || faltantes.length) {
+            let msg = '⚠️ Classifique TODAS as empilhadeiras em exatamente um status.\n\n';
+            if (duplicadas.length) {
+                msg += 'Marcadas em ambos os grupos:\n- ' + duplicadas.join('\n- ') + '\n\n';
+            }
+            if (faltantes.length) {
+                msg += 'Sem status (nenhum grupo):\n- ' + faltantes.join('\n- ') + '\n\n';
+            }
+            alert(msg);
+            return; // bloqueia envio
+            }
+
+            // monta payload
+            const empDisp = [...disp].join(', ');
+            const empMan  = [...man].join(', ');
+
+            const dados = {
+            data: document.getElementById('dt-os').value,
+            periodo: document.getElementById('periodo').value,
+            empilhadeiras_disponiveis: empDisp,
+            empilhadeiras_em_manutencao: empMan
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            try {
+            const body = 'dados=' + encodeURIComponent(JSON.stringify({
+                action: 'salvarDMLPL',
+                dados
+            }));
+
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+            });
+
+            const json = await resp.json();
+            if (json.sucesso){
+                alert('✅ Registro salvo com sucesso!');
+                limparCampos();
+            } else {
+                alert('❌ Falha ao salvar: ' + (json.mensagem || 'erro desconhecido'));
+            }
+            } catch (err){
+            console.error(err);
+            alert('❌ Erro ao conectar ao servidor.');
+            } finally {
+            btn.disabled = false;
+            btn.textContent = 'Registrar';
+            }
         });
 
-        const json = await resp.json();
-        if (json.sucesso){
-          alert('✅ Registro salvo com sucesso!');
-          limparCampos();
-        } else {
-          alert('❌ Falha ao salvar: ' + (json.mensagem || 'erro desconhecido'));
-        }
-      } catch (err){
-        console.error(err);
-        alert('❌ Erro ao conectar ao servidor.');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Registrar';
-      }
-    });
-  </script>
+        // inicia quando a página carregar
+        document.addEventListener('DOMContentLoaded', renderLists);
+    </script>
+
 </body>
 </html>
 
