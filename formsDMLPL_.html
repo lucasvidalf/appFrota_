@@ -123,6 +123,27 @@
     .modal .btns .ok { background: #0b4c59; color:#fff; }
     .modal .btns .cancel { background: #eee; }
 
+    input[type="date"].control {
+      appearance: none;        /* remove estilo nativo */
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-color: #f9fafa;
+      border: 1px solid #cfd8dc;
+      border-radius: var(--br-sm);
+      padding: 10px 12px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      width: 100%;
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    input[type="date"].control:focus {
+      border-color: var(--brand-mid);
+      box-shadow: 0 0 0 3px rgba(61,183,172,.25);
+      background:#fff;
+    }
+
     @media (max-width:520px){
       .emp-grid{ grid-template-columns: 1fr }
     }
