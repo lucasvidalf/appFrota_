@@ -96,6 +96,33 @@
       gap:12px 14px;
       align-items:start;
     }
+
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      display: flex; align-items: center; justify-content: center;
+      visibility: hidden; opacity: 0;
+      transition: .3s ease;
+      z-index: 10000;
+    }
+    .modal-overlay.show {
+      visibility: visible; opacity: 1;
+    }
+    .modal {
+      background: #fff; padding: 24px; border-radius: 14px;
+      max-width: 320px; text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    }
+    .modal h3 { margin-top: 0; font-size: 18px; font-weight: 800; }
+    .modal p { margin: 12px 0 20px; }
+    .modal .btns { display: flex; gap: 10px; justify-content: center; }
+    .modal .btns button {
+      border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700;
+      cursor: pointer;
+    }
+    .modal .btns .ok { background: #0b4c59; color:#fff; }
+    .modal .btns .cancel { background: #eee; }
+
     @media (max-width:520px){
       .emp-grid{ grid-template-columns: 1fr }
     }
@@ -130,14 +157,38 @@
   <main class="app">
     <!-- Cabeçalho -->
     <header class="card-header">
-      <h1 class="title">EMPILHADEIRAS — Disponibilidade</h1>
-      <p class="subtitle">1) Gerencie a lista de placas · 2) Classifique como Disponível ou Manutenção</p>
+      <h1 class="title">ATUALIZAÇÃO DISPONIBILIDADE</h1>
+      <p class="subtitle">Fábrica Linha 2</p>
     </header>
+
+    <section class="card" aria-label="Informações Gerais">
+      <h2 class="section-title">DATA E PERÍODO</h2>
+      <div class="section-body">
+        <div class="info-grid">
+          <div class="field">
+            <label class="label" for="dtRegistro">Data</label>
+            <input class="control" type="date" id="dtRegistro" />
+          </div>
+          <div class="field">
+            <label class="label" for="periodoRegistro">Período</label>
+            <select class="control" id="periodoRegistro">
+              <option value="">— selecione —</option>
+              <option>00-01h</option><option>01-02h</option><option>02-03h</option><option>03-04h</option>
+              <option>04-05h</option><option>05-06h</option><option>06-07h</option><option>07-08h</option>
+              <option>08-09h</option><option>09-10h</option><option>10-11h</option><option>11-12h</option>
+              <option>12-13h</option><option>13-14h</option><option>14-15h</option><option>15-16h</option>
+              <option>16-17h</option><option>17-18h</option><option>18-19h</option><option>19-20h</option>
+              <option>20-21h</option><option>21-22h</option><option>22-23h</option><option>23-00h</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- 1) GERENCIAR LISTA DE EMPILHADEIRAS -->
     <section id="secGerenciar" class="card" aria-label="Gerenciar Frota">
       <h2 class="section-title">
-        <span>LISTA DE EMPILHADEIRAS (Gerenciar)</span>
+        <span>LISTA DE EMPILHADEIRAS</span>
         <small class="muted"><span id="totalPlacas">0</span> placas • <span id="infoAtualizacao">—</span></small>
       </h2>
       <div class="section-body">
@@ -179,6 +230,17 @@
       </div>
     </section>
   </main>
+
+  <div id="modalConfirm" class="modal-overlay">
+    <div class="modal">
+      <h3 id="modalTitle">Confirmação</h3>
+      <p id="modalMsg">Mensagem aqui</p>
+      <div class="btns">
+        <button class="ok">OK</button>
+        <button class="cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     /************ CONFIG ************/
@@ -299,11 +361,11 @@
         if (emDisp && emMan)  duplicados.push(code);
       });
       if (faltantes.length){
-        alert(`⚠️ Existem empilhadeiras sem status (nem disponível, nem manutenção):\n• ${faltantes.join(', ')}`);
+        showModal(`⚠️ Existem empilhadeiras sem status (nem disponível, nem manutenção):\n• ${faltantes.join(', ')}`);
         return false;
       }
       if (duplicados.length){
-        alert(`⚠️ Existem empilhadeiras com status duplicado:\n• ${duplicados.join(', ')}`);
+        showModal(`⚠️ Existem empilhadeiras com status duplicado:\n• ${duplicados.join(', ')}`);
         return false;
       }
       return true;
@@ -351,18 +413,40 @@
       return json;
     }
 
+    function resetAfterSave(){
+      window.location.assign('menuFormsLPL.html');
+    }
+
+    function showModal(msg, onOk, opts = {}) {
+      const overlay = document.getElementById('modalConfirm');
+      document.getElementById('modalMsg').textContent = msg;
+      overlay.classList.add('show');
+
+      const okBtn = overlay.querySelector('.ok');
+      const cancelBtn = overlay.querySelector('.cancel');
+
+      // opções
+      const hideCancel = opts.hideCancel === true;
+      cancelBtn.style.display = hideCancel ? 'none' : '';
+
+      const close = () => overlay.classList.remove('show');
+
+      okBtn.onclick = () => { close(); if (onOk) onOk(); };
+      cancelBtn.onclick = close;
+    }
+
     /************ HANDLERS UI ************/
     document.getElementById('btnAdicionar').addEventListener('click', ()=>{
       const raw = document.getElementById('novoCodigo').value;
       const code = slug(raw);
-      if (!code){ alert('Informe um código (ex.: EMP0092).'); return; }
+      if (!code){ showModal('Informe um código (ex.: EMP0092).'); return; }
 
       // validação leve
       if (!/^EMP\d{3,5}$/.test(code)) {
         if (!confirm('Código fora do padrão EMP0000. Deseja adicionar mesmo assim?')) return;
       }
       if (FROTA.includes(code)){
-        alert('Este código já está na lista.');
+        showModal('Este código já está na lista.');
         return;
       }
       FROTA.push(code);
@@ -372,12 +456,12 @@
     });
 
     document.getElementById('btnSalvarLista').addEventListener('click', async ()=>{
-      if (!FROTA.length){ alert('A lista está vazia.'); return; }
+      if (!FROTA.length){ showModal('A lista está vazia.'); return; }
       try{
         const ordenada = sortPlacas(FROTA);
         const r = await apiSalvarFrota(ordenada);
         setInfoAtualizacao(r.atualizadoEm || 'agora');
-        alert('✅ Lista salva com sucesso! A classificação foi liberada.');
+        showModal('✅ Lista salva com sucesso! A classificação foi liberada.');
 
         // Libera etapa 2
         listaFoiSalva = true;
@@ -392,7 +476,7 @@
         renderGrids();
       }catch(err){
         console.error(err);
-        alert('❌ Não foi possível salvar a lista.');
+        showModal('❌ Não foi possível salvar a lista.');
       }
     });
 
@@ -410,7 +494,7 @@
         }
       }catch(err){
         console.error(err);
-        alert('❌ Não foi possível recarregar a lista.');
+        showModal('❌ Não foi possível recarregar a lista.');
       }
     });
 
@@ -422,22 +506,44 @@
     document.getElementById('btnRegistrar').addEventListener('click', async ()=>{
       if (!validarSelecao()) return;
 
+      const periodoSel = document.getElementById('periodoRegistro').value;
+      if (!periodoSel) {
+        showModal('Selecione um período para registrar.');
+        return;
+      }
+
+      const btn = document.getElementById('btnRegistrar');
+      btn.disabled = true;
+
       const agora = new Date();
       const iso = `${agora.getFullYear()}-${pad(agora.getMonth()+1)}-${pad(agora.getDate())} ${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
 
       const payload = {
         data: iso,
-        periodo: '',
+        periodo: periodoSel,
         empilhadeiras_disponiveis: Array.from(DISP).join(','),
         empilhadeiras_em_manutencao: Array.from(MAN).join(',')
       };
 
       try{
         await apiRegistrarSelecao(payload);
-        alert('✅ Registro DM salvo com sucesso!');
+
+        // limpa seleções e campos
+        DISP.clear(); MAN.clear();
+        document.getElementById('periodoRegistro').value = '';
+        document.getElementById('dtRegistro').value = '';
+        renderGrids();
+
+        // mostra modal e só então redireciona
+        showModal('✅ Registro DM salvo com sucesso!', () => {
+          resetAfterSave(); // window.location.assign('menuFormsLPL.html');
+        }, { hideCancel: true });
+
       }catch(err){
         console.error(err);
-        alert('❌ Não foi possível salvar o registro DM.');
+        showModal('❌ Não foi possível salvar o registro DM.');
+      }finally{
+        btn.disabled = false;
       }
     });
 
@@ -458,6 +564,15 @@
       // e só aparece após "Salvar lista"
       document.getElementById('secClassificacao').classList.add('hidden');
     })();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const pad = n => String(n).padStart(2,'0');
+      const d = new Date();
+      const hoje = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const el = document.getElementById('dtRegistro');
+      if (el && !el.value) el.value = hoje;
+    });
+
   </script>
 </body>
 </html>
