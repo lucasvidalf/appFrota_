@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>DM — PDN (Gerenciar + Disponibilidade 07t / 16t)</title>
+  <title>DM — Empilhadeiras PDN (Gerenciar + Disponibilidade)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -16,10 +16,10 @@
     body{
       margin:0; background:var(--bg); color:var(--text);
       font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      display:flex; align-items:center; justify-content:center;
+      display:flex; align-items:flex-start; justify-content:center;
       padding: clamp(8px, 2vw, 16px);
     }
-    .app{ width:min(760px, 100%); margin:auto; }
+    .app{ width:min(900px, 100%); margin:auto; }
 
     /* Cabeçalho */
     .card-header{
@@ -32,12 +32,14 @@
     .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
     .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(13px,3.2vw,16px) }
 
-    /* Cards / títulos menores */
+    /* Cards */
     .card{
       margin-top:12px; background:var(--white);
       border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden;
     }
     .card::before{ content:""; display:block; height:18px; background:var(--brand-mid) }
+
+    /* Títulos menores */
     h2.section-title{
       margin:12px; background:#3db7ac; color:#0b1f1e;
       font-weight:800; letter-spacing:.4px;
@@ -47,8 +49,8 @@
     }
     .section-title small{ font-weight:600; opacity:.9 }
     .muted{ opacity:.85; font-weight:700 }
-    .section-body{ padding: 0 12px 12px; }
 
+    .section-body{ padding: 0 12px 12px; }
     .field{ margin-bottom:12px }
     .label{ font-weight:800; letter-spacing:.3px; margin-bottom:6px; display:block }
     .control{
@@ -73,10 +75,9 @@
       border:0; background:#ffeaea; color:#a10; border-radius:999px; cursor:pointer;
       width:22px; height:22px; line-height:22px; font-weight:900;
     }
-    .inline-add{ display:flex; gap:8px; align-items:center; margin-top:10px }
+    .inline-add{ display:flex; gap:8px; align-items:center; margin-top:10px; }
     .inline-add input{ flex:1 }
     .inline-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px }
-
     .btn{
       border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
       background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18);
@@ -109,7 +110,27 @@
     .hidden{ display:none !important; }
     @media (max-width:640px){ .section-title{ flex-wrap:wrap; gap:6px } }
 
-    /* ===== Overlay de carregamento global ===== */
+    /* Modal (corrigido: começa display:none) */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      display: none; align-items: center; justify-content: center;
+      z-index: 10000;
+    }
+    .modal-overlay.show { display:flex; }
+    .modal {
+      background: #fff; padding: 24px; border-radius: 14px;
+      max-width: 320px; text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    }
+    .modal h3 { margin-top: 0; font-size: 18px; font-weight: 800; }
+    .modal p { margin: 12px 0 20px; }
+    .modal .btns { display: flex; gap: 10px; justify-content: center; }
+    .modal .btns button { border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+    .modal .btns .ok { background: #0b4c59; color:#fff; }
+    .modal .btns .cancel { background: #eee; }
+
+    /* Overlay de carregamento */
     .busy {
       position: fixed; inset: 0; display: none;
       align-items: center; justify-content: center;
@@ -117,29 +138,19 @@
       z-index: 9999;
     }
     .busy.show { display: flex; }
-    .busy .box{
-      display:flex; align-items:center; gap:12px;
-      background:#fff; border-radius:12px; padding:12px 16px;
-      box-shadow: var(--shadow); font-weight:800; letter-spacing:.3px;
-      color:#063a36;
-    }
-    .busy .spinner{
-      width:18px; height:18px; border-radius:50%;
-      border:3px solid #b9e6e1; border-top-color:#3db7ac;
-      animation: spin .9s linear infinite;
-    }
+    .busy .box{ display:flex; align-items:center; gap:12px; background:#fff; border-radius:12px; padding:12px 16px; box-shadow: var(--shadow); font-weight:800; letter-spacing:.3px; color:#063a36; }
+    .busy .spinner{ width:18px; height:18px; border-radius:50%; border:3px solid #b9e6e1; border-top-color:#3db7ac; animation: spin .9s linear infinite; }
     @keyframes spin { to{ transform: rotate(360deg) } }
   </style>
 </head>
 <body>
   <main class="app">
-    <!-- Cabeçalho -->
     <header class="card-header">
       <h1 class="title">ATUALIZAÇÃO DISPONIBILIDADE — PDN</h1>
-      <p class="subtitle">Empilhadeiras 07 t e 16 t</p>
+      <p class="subtitle">Empilhadeiras 07t e 16t</p>
     </header>
 
-    <!-- DATA / PERÍODO -->
+    <!-- DATA + PERÍODO -->
     <section class="card" aria-label="Informações Gerais">
       <h2 class="section-title">DATA E PERÍODO</h2>
       <div class="section-body">
@@ -164,34 +175,25 @@
       </div>
     </section>
 
-    <!-- 1) GERENCIAR LISTAS (07t e 16t) -->
-    <section id="secGerenciar" class="card" aria-label="Gerenciar Frotas">
+    <!-- GERENCIAR FROTAS -->
+    <section id="secGerenciar" class="card" aria-label="Gerenciar Frotas PDN">
       <h2 class="section-title">
         <span>LISTAS DE EMPILHADEIRAS (PDN)</span>
-        <small class="muted">
-          <span id="totalPlacas07">0</span> placas 07t •
-          <span id="totalPlacas16">0</span> placas 16t •
-          <span id="infoAtualizacao">—</span>
-        </small>
+        <small class="muted"><span id="totalPlacas7">0</span> placas 07t • <span id="totalPlacas16">0</span> placas 16t • <span id="infoAtualizacao">—</span></small>
       </h2>
       <div class="section-body">
-        <!-- 07t -->
-        <div class="field">
-          <label class="label">Frota 07 toneladas</label>
-          <div id="pill07" class="pill-wrap" aria-live="polite"></div>
-          <div class="inline-add">
-            <input id="novoCodigo07" class="control" placeholder="Adicionar código 07t (ex.: EMP0092)" />
-            <button class="btn ghost" id="btnAdd07">Adicionar</button>
-          </div>
+        <h3 style="margin:8px 2px 6px">Frota 07 toneladas</h3>
+        <div id="pillContainer7" class="pill-wrap" aria-live="polite"></div>
+        <div class="inline-add">
+          <input id="novoCodigo7" class="control" placeholder="Adicionar código 07t (ex.: EMP0701)" />
+          <button class="btn ghost" id="btnAdicionar7">Adicionar</button>
         </div>
-        <!-- 16t -->
-        <div class="field">
-          <label class="label">Frota 16 toneladas</label>
-          <div id="pill16" class="pill-wrap" aria-live="polite"></div>
-          <div class="inline-add">
-            <input id="novoCodigo16" class="control" placeholder="Adicionar código 16t (ex.: EMP0201)" />
-            <button class="btn ghost" id="btnAdd16">Adicionar</button>
-          </div>
+
+        <h3 style="margin:16px 2px 6px">Frota 16 toneladas</h3>
+        <div id="pillContainer16" class="pill-wrap" aria-live="polite"></div>
+        <div class="inline-add">
+          <input id="novoCodigo16" class="control" placeholder="Adicionar código 16t (ex.: EMP1601)" />
+          <button class="btn ghost" id="btnAdicionar16">Adicionar</button>
         </div>
 
         <div class="inline-actions">
@@ -201,18 +203,26 @@
       </div>
     </section>
 
-    <!-- 2) CLASSIFICAÇÃO (4 seções) -->
+    <!-- CLASSIFICAÇÕES (4 grupos) -->
     <section id="secClassificacao" class="card hidden" aria-label="Classificação">
-      <h2 class="section-title"><span>EMPILHADEIRAS 07 t DISPONÍVEIS</span><small id="countDisp07">0</small></h2>
-      <div class="section-body"><div id="gridDisp07" class="emp-grid"></div></div>
+      <h2 class="section-title">
+        <span>EMPILHADEIRAS 07t DISPONÍVEIS</span><small id="countDisp7">0</small>
+      </h2>
+      <div class="section-body"><div id="gridDisp7" class="emp-grid"></div></div>
 
-      <h2 class="section-title"><span>EMPILHADEIRAS 07 t EM MANUTENÇÃO</span><small id="countMan07">0</small></h2>
-      <div class="section-body"><div id="gridMan07" class="emp-grid"></div></div>
+      <h2 class="section-title">
+        <span>EMPILHADEIRAS 07t EM MANUTENÇÃO</span><small id="countMan7">0</small>
+      </h2>
+      <div class="section-body"><div id="gridMan7" class="emp-grid"></div></div>
 
-      <h2 class="section-title"><span>EMPILHADEIRAS 16 t DISPONÍVEIS</span><small id="countDisp16">0</small></h2>
+      <h2 class="section-title">
+        <span>EMPILHADEIRAS 16t DISPONÍVEIS</span><small id="countDisp16">0</small>
+      </h2>
       <div class="section-body"><div id="gridDisp16" class="emp-grid"></div></div>
 
-      <h2 class="section-title"><span>EMPILHADEIRAS 16 t EM MANUTENÇÃO</span><small id="countMan16">0</small></h2>
+      <h2 class="section-title">
+        <span>EMPILHADEIRAS 16t EM MANUTENÇÃO</span><small id="countMan16">0</small>
+      </h2>
       <div class="section-body"><div id="gridMan16" class="emp-grid"></div></div>
 
       <div class="actions">
@@ -223,7 +233,7 @@
   </main>
 
   <!-- Modal -->
-  <div id="modalConfirm" class="modal-overlay">
+  <div id="modalConfirm" class="modal-overlay" aria-hidden="true">
     <div class="modal">
       <h3 id="modalTitle">Confirmação</h3>
       <p id="modalMsg">Mensagem aqui</p>
@@ -242,21 +252,13 @@
   <script>
     /************ CONFIG ************/
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
-    // AÇÕES para o PDN (ajuste se no seu Apps Script forem outros nomes)
-    const ACTIONS = {
-      getFrota: 'getFrotaPDN',
-      saveFrota: 'salvarFrotaPDN',
-      saveDM: 'salvarDMPDN'
-    };
 
     // Estado
-    let FROTA07 = [];
-    let FROTA16 = [];
-    let DISP07  = new Set();
-    let MAN07   = new Set();
-    let DISP16  = new Set();
-    let MAN16   = new Set();
-    let listaFoiSalva = false;
+    let FROTA7 = [];  // lista 07t
+    let FROTA16 = []; // lista 16t
+    let DISP7 = new Set(), MAN7 = new Set();
+    let DISP16 = new Set(), MAN16 = new Set();
+    let listasSalvas = false;
 
     /************ UTIL ************/
     const pad = n => String(n).padStart(2,'0');
@@ -272,7 +274,7 @@
     function setBtnLoading(btn, on, textWhile='Carregando…'){
       if (!btn) return;
       if (on){ btn.dataset._txt = btn.textContent; btn.textContent = textWhile; btn.disabled = true; }
-      else { if (btn.dataset._txt) btn.textContent = btn.dataset._txt; btn.disabled = false; }
+      else   { btn.textContent = btn.dataset._txt || btn.textContent; btn.disabled = false; }
     }
 
     function sortPlacas(arr){
@@ -291,9 +293,10 @@
         return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }catch(e){ return String(ts); }
     }
+
     const setInfoAtualizacao = (str) => document.getElementById('infoAtualizacao').textContent = str || '—';
     const setTotals = () => {
-      document.getElementById('totalPlacas07').textContent = FROTA07.length;
+      document.getElementById('totalPlacas7').textContent  = FROTA7.length;
       document.getElementById('totalPlacas16').textContent = FROTA16.length;
     };
 
@@ -301,29 +304,40 @@
       const overlay = document.getElementById('modalConfirm');
       document.getElementById('modalMsg').textContent = msg;
       overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden','false');
+
       const okBtn = overlay.querySelector('.ok');
       const cancelBtn = overlay.querySelector('.cancel');
-      cancelBtn.style.display = opts.hideCancel ? 'none' : '';
-      const close = () => overlay.classList.remove('show');
+
+      const hideCancel = opts.hideCancel === true;
+      cancelBtn.style.display = hideCancel ? 'none' : '';
+
+      const close = () => { overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); };
+
       okBtn.onclick = () => { close(); if (onOk) onOk(); };
       cancelBtn.onclick = close;
     }
 
-    /************ RENDER: PILLS (07/16) ************/
-    function renderPills(containerId, arr, onRemove){
+    /************ RENDER — PILLS ************/
+    function renderPills(list, containerId, setDisp, setMan){
       const wrap = document.getElementById(containerId);
       wrap.innerHTML = '';
-      sortPlacas(arr).forEach(code=>{
+      sortPlacas(list).forEach(code=>{
         const pill = document.createElement('span');
         pill.className = 'pill';
         pill.innerHTML = `<strong>${code}</strong><button type="button" aria-label="Remover ${code}">&times;</button>`;
-        pill.querySelector('button').addEventListener('click', ()=> onRemove(code));
+        pill.querySelector('button').addEventListener('click', ()=>{
+          const idx = list.indexOf(code);
+          if (idx>-1) list.splice(idx,1);
+          setDisp.delete(code); setMan.delete(code);
+          drawAll();
+        });
         wrap.appendChild(pill);
       });
       setTotals();
     }
 
-    /************ RENDER: GRIDS (4 listas) ************/
+    /************ RENDER — GRIDS (4) ************/
     function makeCheck(code, grupo){
       const id = `${grupo}-${code}`;
       const lbl = document.createElement('label');
@@ -331,92 +345,86 @@
       lbl.innerHTML = `<input type="checkbox" id="${id}" /><span>${code}</span>`;
       const input = lbl.querySelector('input');
 
-      // estado inicial
-      if (grupo === 'disp07') input.checked = DISP07.has(code);
-      if (grupo === 'man07')  input.checked = MAN07.has(code);
+      // seta estado
+      if (grupo === 'disp7')  input.checked = DISP7.has(code);
+      if (grupo === 'man7')   input.checked = MAN7.has(code);
       if (grupo === 'disp16') input.checked = DISP16.has(code);
       if (grupo === 'man16')  input.checked = MAN16.has(code);
 
       input.addEventListener('change', ()=>{
-        switch(grupo){
-          case 'disp07': if (input.checked){ DISP07.add(code); MAN07.delete(code); } else DISP07.delete(code); break;
-          case 'man07' : if (input.checked){ MAN07.add(code);  DISP07.delete(code);} else MAN07.delete(code);  break;
-          case 'disp16': if (input.checked){ DISP16.add(code); MAN16.delete(code); } else DISP16.delete(code); break;
-          case 'man16' : if (input.checked){ MAN16.add(code);  DISP16.delete(code);} else MAN16.delete(code);  break;
-        }
-        renderGrids();
+        if (grupo === 'disp7'){   if (input.checked){ DISP7.add(code); MAN7.delete(code);} else DISP7.delete(code); }
+        if (grupo === 'man7'){    if (input.checked){ MAN7.add(code);  DISP7.delete(code);} else MAN7.delete(code);  }
+        if (grupo === 'disp16'){  if (input.checked){ DISP16.add(code);MAN16.delete(code);} else DISP16.delete(code);}
+        if (grupo === 'man16'){   if (input.checked){ MAN16.add(code); DISP16.delete(code);} else MAN16.delete(code); }
+        drawGrids();
       });
+
       return lbl;
     }
 
-    function renderGrids(){
-      const gD07 = document.getElementById('gridDisp07');
-      const gM07 = document.getElementById('gridMan07');
-      const gD16 = document.getElementById('gridDisp16');
-      const gM16 = document.getElementById('gridMan16');
-      gD07.innerHTML = gM07.innerHTML = gD16.innerHTML = gM16.innerHTML = '';
+    function drawGrids(){
+      // containers
+      const gD7 = document.getElementById('gridDisp7');
+      const gM7 = document.getElementById('gridMan7');
+      const gD16= document.getElementById('gridDisp16');
+      const gM16= document.getElementById('gridMan16');
+      gD7.innerHTML = gM7.innerHTML = gD16.innerHTML = gM16.innerHTML = '';
 
-      // cada placa só aparece em UMA das duas listas do seu grupo
-      sortPlacas(FROTA07.filter(c => !MAN07.has(c))).forEach(code => gD07.appendChild(makeCheck(code,'disp07')));
-      sortPlacas(FROTA07.filter(c => !DISP07.has(c))).forEach(code => gM07.appendChild(makeCheck(code,'man07')));
-      sortPlacas(FROTA16.filter(c => !MAN16.has(c))).forEach(code => gD16.appendChild(makeCheck(code,'disp16')));
-      sortPlacas(FROTA16.filter(c => !DISP16.has(c))).forEach(code => gM16.appendChild(makeCheck(code,'man16')));
+      // 07t: mostra em apenas um grupo (exclusivo)
+      sortPlacas(FROTA7.filter(c => !MAN7.has(c))).forEach(c => gD7.appendChild(makeCheck(c,'disp7')));
+      sortPlacas(FROTA7.filter(c => !DISP7.has(c))).forEach(c => gM7.appendChild(makeCheck(c,'man7')));
 
-      updateCounts();
-    }
+      // 16t
+      sortPlacas(FROTA16.filter(c => !MAN16.has(c))).forEach(c => gD16.appendChild(makeCheck(c,'disp16')));
+      sortPlacas(FROTA16.filter(c => !DISP16.has(c))).forEach(c => gM16.appendChild(makeCheck(c,'man16')));
 
-    function updateCounts(){
-      document.getElementById('countDisp07').textContent = DISP07.size;
-      document.getElementById('countMan07').textContent  = MAN07.size;
+      // contadores
+      document.getElementById('countDisp7').textContent  = DISP7.size;
+      document.getElementById('countMan7').textContent   = MAN7.size;
       document.getElementById('countDisp16').textContent = DISP16.size;
       document.getElementById('countMan16').textContent  = MAN16.size;
     }
 
-    function validarSelecao(){
-      // 07t
-      const falt07 = [], dup07 = [];
-      FROTA07.forEach(code=>{
-        const a = DISP07.has(code), b = MAN07.has(code);
-        if (!a && !b) falt07.push(code);
-        if (a && b)   dup07.push(code);
-      });
-      // 16t
-      const falt16 = [], dup16 = [];
-      FROTA16.forEach(code=>{
-        const a = DISP16.has(code), b = MAN16.has(code);
-        if (!a && !b) falt16.push(code);
-        if (a && b)   dup16.push(code);
-      });
+    function drawAll(){
+      renderPills(FROTA7,  'pillContainer7',  DISP7, MAN7);
+      renderPills(FROTA16, 'pillContainer16', DISP16, MAN16);
+      if (listasSalvas) drawGrids();
+    }
 
-      if (falt07.length || dup07.length || falt16.length || dup16.length){
-        let msg = '⚠️ Classifique todas as empilhadeiras de cada grupo em exatamente um status.\n\n';
-        if (dup07.length)  msg += '07t com status duplicado: ' + dup07.join(', ') + '\n';
-        if (falt07.length) msg += '07t sem status: ' + falt07.join(', ') + '\n';
-        if (dup16.length)  msg += '16t com status duplicado: ' + dup16.join(', ') + '\n';
-        if (falt16.length) msg += '16t sem status: ' + falt16.join(', ') + '\n';
-        showModal(msg);
-        return false;
-      }
+    function validarSelecao(){
+      const falt = [], dup = [];
+      const chk = (lista, dSet, mSet) => {
+        lista.forEach(code=>{
+          const a = dSet.has(code), b = mSet.has(code);
+          if (!a && !b) falt.push(code);
+          if (a && b)   dup.push(code);
+        });
+      };
+      chk(FROTA7, DISP7, MAN7);
+      chk(FROTA16, DISP16, MAN16);
+
+      if (falt.length){ showModal(`⚠️ Há placas sem status:\n• ${falt.join(', ')}`); return false; }
+      if (dup.length){  showModal(`⚠️ Há placas com status duplicado:\n• ${dup.join(', ')}`); return false; }
       return true;
     }
 
     /************ API ************/
-    async function apiGetFrota(){
-      const params = new URLSearchParams({ action: ACTIONS.getFrota });
+    async function apiGetFrotaPDN(){
+      const params = new URLSearchParams({ action: 'getFrotaPDN' });
       const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`, { cache:'no-store' });
       const json = await resp.json();
       if (!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter frota PDN');
       return {
-        frota07: json.emp07 || [],
+        frota7:  json.emp7  || [],
         frota16: json.emp16 || [],
         atualizadoEm: json.timestamp ? formatTS(json.timestamp) : ''
       };
     }
 
-    async function apiSalvarFrota(arr07, arr16){
+    async function apiSalvarFrotaPDN(lista7, lista16){
       const body = 'dados=' + encodeURIComponent(JSON.stringify({
-        action: ACTIONS.saveFrota,
-        dados: { lista07: arr07, lista16: arr16 }
+        action: 'salvarFrotaPDN',
+        dados: { lista7, lista16 }
       }));
       const resp = await fetch(SCRIPT_URL, {
         method:'POST',
@@ -428,10 +436,10 @@
       return { sucesso:true, atualizadoEm: formatTS(new Date()) };
     }
 
-    async function apiRegistrarSelecao(payload){
+    async function apiRegistrarSelecaoPDN(payload){
       const body = 'dados=' + encodeURIComponent(JSON.stringify({
-        action: ACTIONS.saveDM,
-        dados: payload   // será salvo na aba lancamentosDM_PDN
+        action: 'salvarDMPDN',
+        dados: payload
       }));
       const resp = await fetch(SCRIPT_URL, {
         method:'POST',
@@ -443,95 +451,76 @@
       return json;
     }
 
-    function resetAfterSave(){
-      // ajuste o caminho conforme onde este arquivo ficará
-      window.location.assign('../index.html');
-    }
-
-    /************ HANDLERS: GERENCIAR ************/
-    // adicionar/remover 07
-    document.getElementById('btnAdd07').addEventListener('click', ()=>{
-      const raw = document.getElementById('novoCodigo07').value;
+    /************ HANDLERS ************/
+    // adicionar código manualmente (07t / 16t)
+    document.getElementById('btnAdicionar7').addEventListener('click', ()=>{
+      const raw = document.getElementById('novoCodigo7').value;
       const code = slug(raw);
-      if (!code){ showModal('Informe um código (ex.: EMP0092).'); return; }
-      if (!/^EMP\d{3,5}$/.test(code)) if (!confirm('Código fora do padrão EMP0000. Adicionar mesmo assim?')) return;
-      if (FROTA07.includes(code) || FROTA16.includes(code)){ showModal('Este código já existe em alguma lista.'); return; }
-      FROTA07.push(code); document.getElementById('novoCodigo07').value = '';
-      renderPills('pill07', FROTA07, remove07);
+      if (!code){ showModal('Informe um código 07t.'); return; }
+      if (FROTA7.includes(code)){ showModal('Código já existe na lista 07t.'); return; }
+      FROTA7.push(code);
+      document.getElementById('novoCodigo7').value = '';
+      drawAll();
     });
-    function remove07(code){
-      FROTA07 = FROTA07.filter(c=>c!==code);
-      DISP07.delete(code); MAN07.delete(code);
-      renderPills('pill07', FROTA07, remove07);
-      if (listaFoiSalva) renderGrids();
-    }
-
-    // adicionar/remover 16
-    document.getElementById('btnAdd16').addEventListener('click', ()=>{
+    document.getElementById('btnAdicionar16').addEventListener('click', ()=>{
       const raw = document.getElementById('novoCodigo16').value;
       const code = slug(raw);
-      if (!code){ showModal('Informe um código (ex.: EMP0201).'); return; }
-      if (!/^EMP\d{3,5}$/.test(code)) if (!confirm('Código fora do padrão EMP0000. Adicionar mesmo assim?')) return;
-      if (FROTA07.includes(code) || FROTA16.includes(code)){ showModal('Este código já existe em alguma lista.'); return; }
-      FROTA16.push(code); document.getElementById('novoCodigo16').value = '';
-      renderPills('pill16', FROTA16, remove16);
+      if (!code){ showModal('Informe um código 16t.'); return; }
+      if (FROTA16.includes(code)){ showModal('Código já existe na lista 16t.'); return; }
+      FROTA16.push(code);
+      document.getElementById('novoCodigo16').value = '';
+      drawAll();
     });
-    function remove16(code){
-      FROTA16 = FROTA16.filter(c=>c!==code);
-      DISP16.delete(code); MAN16.delete(code);
-      renderPills('pill16', FROTA16, remove16);
-      if (listaFoiSalva) renderGrids();
-    }
 
     document.getElementById('btnSalvarLista').addEventListener('click', async (ev)=>{
-      if (!FROTA07.length && !FROTA16.length){ showModal('As listas estão vazias.'); return; }
+      if (!FROTA7.length && !FROTA16.length){ showModal('As listas estão vazias.'); return; }
       const btn = ev.currentTarget;
       try{
         setBtnLoading(btn,true,'Salvando…'); setBusy(true,'Salvando listas…');
-        const r = await apiSalvarFrota(sortPlacas(FROTA07), sortPlacas(FROTA16));
+        const r = await apiSalvarFrotaPDN(sortPlacas(FROTA7), sortPlacas(FROTA16));
         setInfoAtualizacao(r.atualizadoEm || 'agora');
         showModal('✅ Listas salvas! A classificação foi liberada.');
-        listaFoiSalva = true;
+
+        listasSalvas = true;
         document.getElementById('secClassificacao').classList.remove('hidden');
         document.getElementById('secGerenciar').classList.add('hidden');
-        document.getElementById('secClassificacao').scrollIntoView({behavior:'smooth', block:'start'});
-        // limpar seleções
-        DISP07.clear(); MAN07.clear(); DISP16.clear(); MAN16.clear();
-        renderGrids();
-      }catch(e){
-        console.error(e); showModal('❌ Não foi possível salvar as listas.');
-      }finally{ setBusy(false); setBtnLoading(btn,false); }
+        DISP7.clear(); MAN7.clear(); DISP16.clear(); MAN16.clear();
+        drawGrids();
+      }catch(err){
+        console.error(err); showModal('❌ Não foi possível salvar as listas.');
+      }finally{
+        setBusy(false); setBtnLoading(btn,false);
+      }
     });
 
     document.getElementById('btnRecarregarLista').addEventListener('click', async (ev)=>{
       const btn = ev.currentTarget;
       try{
         setBtnLoading(btn,true,'Recarregando…'); setBusy(true,'Carregando listas…');
-        const data = await apiGetFrota();
-        FROTA07 = data.frota07 || [];
-        FROTA16 = data.frota16 || [];
+        const data = await apiGetFrotaPDN();
+        FROTA7 = data.frota7 || [];
+        FROTA16= data.frota16 || [];
         setInfoAtualizacao(data.atualizadoEm || '—');
-        renderPills('pill07', FROTA07, remove07);
-        renderPills('pill16', FROTA16, remove16);
-        if (listaFoiSalva){ DISP07.clear(); MAN07.clear(); DISP16.clear(); MAN16.clear(); renderGrids(); }
-      }catch(e){
-        console.error(e); showModal('❌ Não foi possível recarregar as listas.');
-      }finally{ setBusy(false); setBtnLoading(btn,false); }
+        drawAll();
+        if (listasSalvas){ DISP7.clear(); MAN7.clear(); DISP16.clear(); MAN16.clear(); drawGrids(); }
+      }catch(err){
+        console.error(err); showModal('❌ Não foi possível recarregar as listas.');
+      }finally{
+        setBusy(false); setBtnLoading(btn,false);
+      }
     });
 
-    /************ HANDLERS: CLASSIFICAÇÃO ************/
     document.getElementById('btnLimparSelecao').addEventListener('click', ()=>{
-      DISP07.clear(); MAN07.clear(); DISP16.clear(); MAN16.clear();
-      renderGrids();
+      DISP7.clear(); MAN7.clear(); DISP16.clear(); MAN16.clear();
+      drawGrids();
     });
 
     document.getElementById('btnRegistrar').addEventListener('click', async (ev)=>{
       if (!validarSelecao()) return;
-
       const periodoSel = document.getElementById('periodoRegistro').value;
       const dataISO    = document.getElementById('dtRegistro').value;
-      if (!dataISO){ showModal('Selecione uma data para registrar.'); return; }
-      if (!periodoSel){ showModal('Selecione um período para registrar.'); return; }
+      if (!dataISO){ showModal('Selecione uma data.'); return; }
+      if (!periodoSel){ showModal('Selecione um período.'); return; }
 
       const btn = ev.currentTarget;
       try{
@@ -540,55 +529,52 @@
         const payload = {
           data: dataISO,
           periodo: periodoSel,
-          // 07 toneladas → colunas C/D
-          emp_07_disponiveis:  Array.from(DISP07).join(','),
-          emp_07_manutencao:   Array.from(MAN07).join(','),
-          // 16 toneladas → colunas G/H
-          emp_16_disponiveis:  Array.from(DISP16).join(','),
-          emp_16_manutencao:   Array.from(MAN16).join(',')
+          emp7_disp:  Array.from(DISP7).join(','),
+          emp7_man:   Array.from(MAN7).join(','),
+          emp16_disp: Array.from(DISP16).join(','),
+          emp16_man:  Array.from(MAN16).join(',')
         };
 
-        await apiRegistrarSelecao(payload);
+        await apiRegistrarSelecaoPDN(payload);
 
-        // limpa seleções e campos
-        DISP07.clear(); MAN07.clear(); DISP16.clear(); MAN16.clear();
-        document.getElementById('periodoRegistro').value = '';
-        renderGrids();
+        // limpa e mantém na etapa de classificação
+        DISP7.clear(); MAN7.clear(); DISP16.clear(); MAN16.clear();
+        drawGrids();
 
-        showModal('✅ Registro DM salvo com sucesso!', () => resetAfterSave(), { hideCancel:true });
-      }catch(e){
-        console.error(e); showModal('❌ Não foi possível salvar o registro DM.');
-      }finally{ setBusy(false); setBtnLoading(btn,false); }
+        showModal('✅ Registro DM (PDN) salvo com sucesso!', null, { hideCancel:true });
+      }catch(err){
+        console.error(err);
+        showModal('❌ Não foi possível salvar o registro DM (PDN).');
+      }finally{
+        setBusy(false); setBtnLoading(btn,false);
+      }
     });
 
     /************ BOOT ************/
     (async function init(){
       try{
-        setBusy(true, 'Carregando listas…');
-        const data = await apiGetFrota();
-        FROTA07 = data.frota07 || [];
+        setBusy(true,'Carregando listas…');
+        const data = await apiGetFrotaPDN();
+        FROTA7  = data.frota7  || [];
         FROTA16 = data.frota16 || [];
         setInfoAtualizacao(data.atualizadoEm || '—');
       }catch(err){
-        console.warn('Sem lista no servidor; carregando exemplo…');
-        FROTA07 = ['EMP0007','EMP0008','EMP0009'];
-        FROTA16 = ['EMP0201','EMP0202'];
+        console.warn('Sem listas no servidor; usando fallback de exemplo.');
+        FROTA7  = ['EMP0007','EMP0008','EMP0009'];  // <— apenas fallback visual
+        FROTA16 = ['EMP0201','EMP0202'];           // <— apenas fallback visual
         setInfoAtualizacao('lista local (fallback)');
       }finally{
         setBusy(false);
       }
-      renderPills('pill07', FROTA07, remove07);
-      renderPills('pill16', FROTA16, remove16);
+      drawAll();
       document.getElementById('secClassificacao').classList.add('hidden');
-    })();
 
-    // Data de hoje padrão
-    window.addEventListener('DOMContentLoaded', () => {
+      // data de hoje
       const d = new Date();
       const hoje = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       const el = document.getElementById('dtRegistro');
       if (el && !el.value) el.value = hoje;
-    });
+    })();
   </script>
 </body>
 </html>
