@@ -114,8 +114,8 @@
     <section class="card" aria-label="Login">
       <div class="form-wrap">
         <div class="field">
-          <label class="label" for="usuario">Usuário / E-mail</label>
-          <input class="control" id="usuario" type="text" placeholder="ex.: nome@empresa.com" autocomplete="username" />
+          <label class="label" for="usuario">Usuário</label>
+          <input class="control" id="usuario" type="text" placeholder="ex.: lucas.vidal" autocomplete="username" />
         </div>
 
         <div class="field">
@@ -224,11 +224,11 @@
       showMsg('Fale com o administrador para redefinir a senha.', 'err');
     });
 
-    // ====== Chamada ao Apps Script ======
-    async function apiLogin(login, senha){
+    // ====== Chamada ao Apps Script (envia {usuario,senha}) ======
+    async function apiLogin(usuario, senha){
       const body = 'dados=' + encodeURIComponent(JSON.stringify({
         action: 'login',
-        dados: { login, senha }
+        dados: { usuario, senha }
       }));
 
       const resp = await fetch(SCRIPT_URL, {
@@ -237,19 +237,32 @@
         body
       });
 
-      const json = await resp.json();
+      let json;
+      try { json = await resp.json(); } catch(e){ json = null; }
       if (!json || json.sucesso !== true) {
         throw new Error((json && json.mensagem) || 'Falha ao autenticar.');
       }
-      return json; // { sucesso, usuario, acesso, local, permissoes, issuedAt, ttlHours }
+
+      // normaliza sessão salva no storage
+      const now = Date.now();
+      const ttl = Number(json.ttlHours) > 0 ? Number(json.ttlHours) : 12; // 12h padrão
+      return {
+        sucesso: true,
+        token: json.token || 'token-local',
+        login: json.login || usuario,
+        acesso: json.acesso || 'usuario',
+        local: json.local || '',
+        issuedAt: json.issuedAt || now,
+        ttlHours: ttl
+      };
     }
 
     // ====== Submit ======
     $('#btnEntrar').addEventListener('click', async (ev)=>{
-      const login = $('#usuario').value.trim().toLowerCase();
-      const senha = $('#senha').value;
+      const usuario = $('#usuario').value.trim().toLowerCase(); // aceita sem @
+      const senha   = $('#senha').value;
 
-      if (!login || !senha){
+      if (!usuario || !senha){
         showMsg('Preencha usuário e senha.');
         return;
       }
@@ -259,11 +272,11 @@
         showMsg('');
         setBtnLoading(btn, true, 'Entrando…'); setBusy(true, 'Autenticando…');
 
-        const session = await apiLogin(login, senha);
+        const session = await apiLogin(usuario, senha);
 
         // Lembrar apenas o usuário (UX)
         if ($('#remember').checked){
-          localStorage.setItem('appfrota_login_user', login);
+          localStorage.setItem('appfrota_login_user', usuario);
         } else {
           localStorage.removeItem('appfrota_login_user');
         }
