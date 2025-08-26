@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -385,7 +386,7 @@
                 rotation: -90,
                 offset: 2,
                 formatter: (v) => `R$ ${Math.round(v)}`,
-                font: { weight: 800, size: isMobile ? 8 : 11 }
+                font: { weight: 800, size: isMobile ? 8 : 10 }
               }
             }
           ]
@@ -435,8 +436,8 @@
             },
             y1: {
               position: 'right', display:false,
-              min: -25000,
-              max:  8000,
+              min: -190000,
+              max:  70000,
               grid: { drawOnChartArea: false },
               title: { display: false, text: 'Penalidades (Σ)' },
               ticks: { precision: 0 }
@@ -525,7 +526,7 @@
                 anchor:'end', align:'top', offset:2,
                 rotation: -90,
                 formatter: (v) => `R$ ${Math.round(v)}`,
-                font:{weight:800, size:isMobile?8:11}
+                font:{weight:800, size:isMobile?8:10}
               }
             }
           ]
@@ -566,8 +567,8 @@
             },
             y1:{
               position:'right', display:false,
-              min: -25000,
-              max:  8000,
+              min: -190000,
+              max:  70000,
               grid:{ drawOnChartArea:false },
               title:{ display:false, text:'Penalidades (Σ)' },
               ticks:{ precision:0 }
