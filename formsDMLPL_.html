@@ -38,13 +38,17 @@
       border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden;
     }
     .card::before{ content:""; display:block; height:18px; background:var(--brand-mid) }
-    .section-title{
+
+    /* Títulos menores (pedido) */
+    h2.section-title{
       margin:12px; background:#3db7ac; color:#0b1f1e;
       font-weight:800; letter-spacing:.4px;
       padding:10px 14px; border-radius: var(--br-md);
       display:flex; align-items:center; justify-content:space-between;
       gap:10px;
+      font-size: clamp(15px, 3vw, 18px); /* ↓ reduzido */
     }
+
     .section-title small{ font-weight:600; opacity:.9 }
     .muted{ opacity:.85; font-weight:700 }
 
@@ -88,6 +92,7 @@
     .btn:hover{ filter:brightness(1.05) }
     .btn.secondary{ background:#93b8b5; color:#062f2c }
     .btn.ghost{ background:#eef6f5; color:#063a36 }
+    .btn[disabled]{ opacity:.7; cursor:not-allowed }
 
     /* Grids (checkbox pills) */
     .emp-grid{
@@ -97,6 +102,7 @@
       align-items:start;
     }
 
+    /* Modal simples */
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,.4);
@@ -105,9 +111,7 @@
       transition: .3s ease;
       z-index: 10000;
     }
-    .modal-overlay.show {
-      visibility: visible; opacity: 1;
-    }
+    .modal-overlay.show { visibility: visible; opacity: 1; }
     .modal {
       background: #fff; padding: 24px; border-radius: 14px;
       max-width: 320px; text-align: center;
@@ -123,20 +127,12 @@
     .modal .btns .ok { background: #0b4c59; color:#fff; }
     .modal .btns .cancel { background: #eee; }
 
+    /* Input date */
     input[type="date"].control {
-      appearance: none;        /* remove estilo nativo */
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      background-color: #f9fafa;
-      border: 1px solid #cfd8dc;
-      border-radius: var(--br-sm);
-      padding: 10px 12px;
-      font-size: 16px;
-      font-family: inherit;
-      color: var(--text);
-      width: 100%;
-      min-height: 44px;
-      box-sizing: border-box;
+      appearance: none; -webkit-appearance: none; -moz-appearance: none;
+      background-color: #f9fafa; border: 1px solid #cfd8dc; border-radius: var(--br-sm);
+      padding: 10px 12px; font-size: 16px; font-family: inherit; color: var(--text);
+      width: 100%; min-height: 44px; box-sizing: border-box;
     }
     input[type="date"].control:focus {
       border-color: var(--brand-mid);
@@ -144,34 +140,42 @@
       background:#fff;
     }
 
-    @media (max-width:520px){
-      .emp-grid{ grid-template-columns: 1fr }
-    }
+    @media (max-width:520px){ .emp-grid{ grid-template-columns: 1fr } }
     .check-pill{
       display:flex; align-items:center; gap:10px;
-      padding:12px 14px;
-      background:#f9fbfb;
-      border:1px solid #cfd8dc;
-      border-radius:12px;
-      min-height:46px;
+      padding:12px 14px; background:#f9fbfb; border:1px solid #cfd8dc;
+      border-radius:12px; min-height:46px;
       transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
     }
-    .check-pill input[type="checkbox"]{
-      width:18px; height:18px; accent-color:#0b4c59;
-    }
+    .check-pill input[type="checkbox"]{ width:18px; height:18px; accent-color:#0b4c59; }
     .check-pill span{ letter-spacing:.3px; color:#0b1f1e; font-weight:700 }
-    .check-pill:has(input:checked){
-      background:#fff; border-color:#3db7ac; box-shadow:0 0 0 3px rgba(61,183,172,.22);
-    }
+    .check-pill:has(input:checked){ background:#fff; border-color:#3db7ac; box-shadow:0 0 0 3px rgba(61,183,172,.22) }
 
-    .actions{
-      display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
-    }
+    .actions{ display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px; }
 
     .hidden{ display:none !important; }
-    @media (max-width:640px){
-      .section-title{ flex-wrap:wrap; gap:6px }
+    @media (max-width:640px){ .section-title{ flex-wrap:wrap; gap:6px } }
+
+    /* ===== Overlay de carregamento global ===== */
+    .busy {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(255,255,255,.65); backdrop-filter: blur(1px) saturate(1.1);
+      z-index: 9999;
     }
+    .busy.show { display: flex; }
+    .busy .box{
+      display:flex; align-items:center; gap:12px;
+      background:#fff; border-radius:12px; padding:12px 16px;
+      box-shadow: var(--shadow); font-weight:800; letter-spacing:.3px;
+      color:#063a36;
+    }
+    .busy .spinner{
+      width:18px; height:18px; border-radius:50%;
+      border:3px solid #b9e6e1; border-top-color:#3db7ac;
+      animation: spin .9s linear infinite;
+    }
+    @keyframes spin { to{ transform: rotate(360deg) } }
   </style>
 </head>
 <body>
@@ -227,23 +231,13 @@
       </div>
     </section>
 
-    <!-- 2) CLASSIFICAÇÃO: DISPONÍVEIS x MANUTENÇÃO (só aparece após SALVAR LISTA) -->
+    <!-- 2) CLASSIFICAÇÃO -->
     <section id="secClassificacao" class="card hidden" aria-label="Classificação">
-      <h2 class="section-title">
-        <span>EMPILHADEIRAS DISPONÍVEIS</span>
-        <small id="countDisp">0</small>
-      </h2>
-      <div class="section-body">
-        <div id="gridDisp" class="emp-grid"></div>
-      </div>
+      <h2 class="section-title"><span>EMPILHADEIRAS DISPONÍVEIS</span><small id="countDisp">0</small></h2>
+      <div class="section-body"><div id="gridDisp" class="emp-grid"></div></div>
 
-      <h2 class="section-title">
-        <span>EMPILHADEIRAS EM MANUTENÇÃO</span>
-        <small id="countMan">0</small>
-      </h2>
-      <div class="section-body">
-        <div id="gridMan" class="emp-grid"></div>
-      </div>
+      <h2 class="section-title"><span>EMPILHADEIRAS EM MANUTENÇÃO</span><small id="countMan">0</small></h2>
+      <div class="section-body"><div id="gridMan" class="emp-grid"></div></div>
 
       <div class="actions">
         <button class="btn secondary" id="btnLimparSelecao">Limpar seleção</button>
@@ -252,6 +246,7 @@
     </section>
   </main>
 
+  <!-- Modal -->
   <div id="modalConfirm" class="modal-overlay">
     <div class="modal">
       <h3 id="modalTitle">Confirmação</h3>
@@ -263,19 +258,44 @@
     </div>
   </div>
 
+  <!-- Overlay de carregamento -->
+  <div id="busy" class="busy" aria-live="polite" aria-busy="false">
+    <div class="box"><span class="spinner" aria-hidden="true"></span><span id="busyMsg">Processando…</span></div>
+  </div>
+
   <script>
     /************ CONFIG ************/
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec'; // sua URL /exec
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
 
     // Estado
-    let FROTA = [];        // lista “viva” de códigos
-    let DISP  = new Set(); // selecionados como disponíveis
-    let MAN   = new Set(); // selecionados como manutenção
-    let listaFoiSalva = false; // controla quando liberar a classificação
+    let FROTA = [];
+    let DISP  = new Set();
+    let MAN   = new Set();
+    let listaFoiSalva = false;
 
     /************ UTIL ************/
     const pad = n => String(n).padStart(2,'0');
     const slug = s => String(s||'').trim().toUpperCase().replace(/\s+/g,'');
+
+    /* loading helpers */
+    function setBusy(on, msg='Processando…'){
+      const el = document.getElementById('busy');
+      const m  = document.getElementById('busyMsg');
+      m.textContent = msg || 'Processando…';
+      el.classList.toggle('show', !!on);
+      el.setAttribute('aria-busy', on ? 'true' : 'false');
+    }
+    function setBtnLoading(btn, on, textWhile='Carregando…'){
+      if (!btn) return;
+      if (on){
+        btn.dataset._txt = btn.textContent;
+        btn.textContent  = textWhile;
+        btn.disabled = true;
+      }else{
+        if (btn.dataset._txt) btn.textContent = btn.dataset._txt;
+        btn.disabled = false;
+      }
+    }
 
     function sortPlacas(arr){
       return [...arr].sort((a,b)=>{
@@ -312,22 +332,18 @@
           DISP.delete(code);
           MAN.delete(code);
           renderPills();
-          if (listaFoiSalva) renderGrids(); // se já liberamos a etapa 2, atualiza também lá
+          if (listaFoiSalva) renderGrids();
         });
         wrap.appendChild(pill);
       });
       setTotalPlacas();
     }
 
-    // cria um checkbox "pílula"
     function makeCheck(code, grupo){
       const id = `${grupo}-${code}`;
       const lbl = document.createElement('label');
       lbl.className = 'check-pill';
-      lbl.innerHTML = `
-        <input type="checkbox" id="${id}" />
-        <span>${code}</span>
-      `;
+      lbl.innerHTML = `<input type="checkbox" id="${id}" /><span>${code}</span>`;
       const input = lbl.querySelector('input');
 
       if (grupo === 'disp') input.checked = DISP.has(code);
@@ -341,17 +357,12 @@
           if (input.checked){ MAN.add(code); DISP.delete(code); }
           else { MAN.delete(code); }
         }
-        // como as listas são exclusivas, ao mudar precisamos re-renderizar para
-        // mover/remover o card da outra lista
         renderGrids();
       });
 
       return lbl;
     }
 
-    // Mostra cada placa em APENAS UMA lista:
-    // - gridDisp: FROTA - MAN
-    // - gridMan : FROTA - DISP
     function renderGrids(){
       const gridD = document.getElementById('gridDisp');
       const gridM = document.getElementById('gridMan');
@@ -446,7 +457,6 @@
       const okBtn = overlay.querySelector('.ok');
       const cancelBtn = overlay.querySelector('.cancel');
 
-      // opções
       const hideCancel = opts.hideCancel === true;
       cancelBtn.style.display = hideCancel ? 'none' : '';
 
@@ -462,7 +472,6 @@
       const code = slug(raw);
       if (!code){ showModal('Informe um código (ex.: EMP0092).'); return; }
 
-      // validação leve
       if (!/^EMP\d{3,5}$/.test(code)) {
         if (!confirm('Código fora do padrão EMP0000. Deseja adicionar mesmo assim?')) return;
       }
@@ -473,49 +482,46 @@
       FROTA.push(code);
       document.getElementById('novoCodigo').value = '';
       renderPills();
-      // ainda não libera classificação; só depois de SALVAR
     });
 
-    document.getElementById('btnSalvarLista').addEventListener('click', async ()=>{
+    document.getElementById('btnSalvarLista').addEventListener('click', async (ev)=>{
       if (!FROTA.length){ showModal('A lista está vazia.'); return; }
+      const btn = ev.currentTarget;
       try{
+        setBtnLoading(btn, true, 'Salvando…'); setBusy(true, 'Salvando lista…');
         const ordenada = sortPlacas(FROTA);
         const r = await apiSalvarFrota(ordenada);
         setInfoAtualizacao(r.atualizadoEm || 'agora');
         showModal('✅ Lista salva com sucesso! A classificação foi liberada.');
 
-        // Libera etapa 2
         listaFoiSalva = true;
         document.getElementById('secClassificacao').classList.remove('hidden');
-
-        // Esconde gerenciar
         document.getElementById('secGerenciar').classList.add('hidden');
         document.getElementById('secClassificacao').scrollIntoView({ behavior:'smooth', block:'start'});
-        
-        // zera seleções e renderiza a partir da lista salva
         DISP.clear(); MAN.clear();
         renderGrids();
       }catch(err){
         console.error(err);
         showModal('❌ Não foi possível salvar a lista.');
+      }finally{
+        setBusy(false); setBtnLoading(btn, false);
       }
     });
 
-    document.getElementById('btnRecarregarLista').addEventListener('click', async ()=>{
+    document.getElementById('btnRecarregarLista').addEventListener('click', async (ev)=>{
+      const btn = ev.currentTarget;
       try{
+        setBtnLoading(btn, true, 'Recarregando…'); setBusy(true, 'Carregando lista…');
         const data = await apiGetFrota();
         FROTA = data.frota || [];
         setInfoAtualizacao(data.atualizadoEm || '—');
         renderPills();
-
-        // Se já estava liberada a etapa 2, atualiza também
-        if (listaFoiSalva){
-          DISP.clear(); MAN.clear();
-          renderGrids();
-        }
+        if (listaFoiSalva){ DISP.clear(); MAN.clear(); renderGrids(); }
       }catch(err){
         console.error(err);
         showModal('❌ Não foi possível recarregar a lista.');
+      }finally{
+        setBusy(false); setBtnLoading(btn, false);
       }
     });
 
@@ -524,53 +530,49 @@
       renderGrids();
     });
 
-    document.getElementById('btnRegistrar').addEventListener('click', async ()=>{
+    document.getElementById('btnRegistrar').addEventListener('click', async (ev)=>{
       if (!validarSelecao()) return;
 
       const periodoSel = document.getElementById('periodoRegistro').value;
-      if (!periodoSel) {
-        showModal('Selecione um período para registrar.');
-        return;
-      }
+      const dataISO    = document.getElementById('dtRegistro').value;
 
-      const btn = document.getElementById('btnRegistrar');
-      btn.disabled = true;
+      if (!dataISO){ showModal('Selecione uma data para registrar.'); return; }
+      if (!periodoSel){ showModal('Selecione um período para registrar.'); return; }
 
-      const agora = new Date();
-      const iso = `${agora.getFullYear()}-${pad(agora.getMonth()+1)}-${pad(agora.getDate())} ${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
-
-      const payload = {
-        data: iso,
-        periodo: periodoSel,
-        empilhadeiras_disponiveis: Array.from(DISP).join(','),
-        empilhadeiras_em_manutencao: Array.from(MAN).join(',')
-      };
-
+      const btn = ev.currentTarget;
       try{
+        setBtnLoading(btn, true, 'Registrando…'); setBusy(true, 'Registrando disponibilidade…');
+
+        const payload = {
+          data: dataISO,                       // usa data escolhida (YYYY-MM-DD)
+          periodo: periodoSel,
+          empilhadeiras_disponiveis: Array.from(DISP).join(','),
+          empilhadeiras_em_manutencao: Array.from(MAN).join(',')
+        };
+
         await apiRegistrarSelecao(payload);
 
-        // limpa seleções e campos
+        // limpa seleções e campos visuais
         DISP.clear(); MAN.clear();
         document.getElementById('periodoRegistro').value = '';
-        document.getElementById('dtRegistro').value = '';
         renderGrids();
 
-        // mostra modal e só então redireciona
         showModal('✅ Registro DM salvo com sucesso!', () => {
-          resetAfterSave(); // window.location.assign('menuFormsLPL.html');
+          resetAfterSave();
         }, { hideCancel: true });
 
       }catch(err){
         console.error(err);
         showModal('❌ Não foi possível salvar o registro DM.');
       }finally{
-        btn.disabled = false;
+        setBusy(false); setBtnLoading(btn, false);
       }
     });
 
     /************ BOOT ************/
     (async function init(){
       try{
+        setBusy(true, 'Carregando lista…');
         const data = await apiGetFrota();
         FROTA = data.frota || [];
         setInfoAtualizacao(data.atualizadoEm || '—');
@@ -578,22 +580,20 @@
         console.warn('Sem lista no servidor; carregando exemplo...');
         FROTA = ['EMP0021','EMP0039','EMP0046','EMP0053','EMP0078','EMP0091','EMP0092','EMP0093','EMP0095','EMP0096','EMP0097','EMP0098','EMP0099','EMP0111','EMP0112','EMP0188'];
         setInfoAtualizacao('lista local (fallback)');
+      }finally{
+        setBusy(false);
       }
       renderPills();
-
-      // por padrão, a seção de classificação fica escondida
-      // e só aparece após "Salvar lista"
       document.getElementById('secClassificacao').classList.add('hidden');
     })();
 
+    // Preenche a data de hoje na primeira carga
     window.addEventListener('DOMContentLoaded', () => {
-      const pad = n => String(n).padStart(2,'0');
       const d = new Date();
       const hoje = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       const el = document.getElementById('dtRegistro');
       if (el && !el.value) el.value = hoje;
     });
-
   </script>
 </body>
 </html>
