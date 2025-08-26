@@ -4,6 +4,54 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Menu — Ordens de Serviço</title>
+
+<!-- ===== GUARDINHA: bloqueia "usuario" ===== -->
+<script>
+(function guardIndicadores(){
+  try {
+    const raw = localStorage.getItem('usuarioLogado');
+    if (!raw) {
+      // sem sessão -> volta pro login
+      location.replace('login.html');
+      return;
+    }
+    const s = JSON.parse(raw);
+
+    // sessão expirada?
+    if (s.issuedAt && s.ttlHours) {
+      const expiraEm = s.issuedAt + s.ttlHours * 3600 * 1000;
+      if (Date.now() > expiraEm) {
+        localStorage.removeItem('usuarioLogado');
+        location.replace('login.html');
+        return;
+      }
+    }
+
+    // precisa ter sucesso no login
+    if (!s.sucesso) {
+      location.replace('login.html');
+      return;
+    }
+
+    // regra de acesso:
+    // - administrador tem acesso
+    // - ou quem tem local = 'adm'
+    const acesso = String(s.acesso || '').toLowerCase();
+    const local  = String(s.local  || '').toLowerCase();
+    const isAdmin = (acesso === 'adm') || (local === 'adm');
+
+    if (!isAdmin) {
+      // bloqueia usuários comuns
+      alert('Acesso negado: esta página de Indicadores é restrita.');
+      location.replace('telaPrincipal.html'); // volta para o menu principal
+    }
+  } catch (e) {
+    // qualquer erro: por segurança, volta ao login
+    location.replace('login.html');
+  }
+})();
+</script>
+  
 <style>
   :root{
     --bg:#e8fffb; --brand-dark:#0b4c59; --brand-mid:#0b4c59; --tile:#a3e0db; --text:#0b1f1e; --shadow:0 8px 24px rgba(0,0,0,.08);
