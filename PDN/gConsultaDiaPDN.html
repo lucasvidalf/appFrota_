@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>DM — Gráfico (Período) PDN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#e8fffb; --brand-dark:#0b4c59; --brand-mid:#3db7ac; --white:#fff; --text:#0b1f1e;
+    --shadow:0 8px 24px rgba(0,0,0,.08);
+    --br-lg:16px; --br-md:12px; --br-sm:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: clamp(8px, 2vw, 16px);
+  }
+  .app{ width:min(900px, 100%); margin:auto; }
+
+  .card-header{
+    background:var(--brand-dark); color:#fff;
+    padding: clamp(18px,5vw,28px) clamp(14px,4vw,20px);
+    border-radius: var(--br-lg);
+    box-shadow: var(--shadow);
+    text-align:center;
+  }
+  .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
+  .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(12px,2.1vw,14px) }
+
+  .card{
+    margin-top:12px; background:var(--white);
+    border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden;
+  }
+  .card::before{ content:""; display:block; height:18px; background:var(--brand-mid) }
+  .section-title{
+    margin:12px; background:#3db7ac; color:#0b1f1e;
+    font-weight:800; letter-spacing:.4px;
+    padding:10px 14px; border-radius: var(--br-md);
+    display:flex; align-items:center; gap:10px;
+    font-size: clamp(14px, 2.5vw, 18px);
+  }
+
+  .filters{ display:grid; gap:10px 12px; grid-template-columns: 1fr 1fr 1fr 1fr; padding:0 12px 6px; }
+  .filters .field{ display:flex; flex-direction:column; gap:6px; }
+  .label{ font-weight:800; letter-spacing:.3px }
+  .control{
+    display:block; width:100%; min-height:44px; font-size:16px;
+    padding:10px 12px; border:1px solid #cfd8dc; border-radius:var(--br-sm);
+    background:#f9fafa; outline:none;
+  }
+  .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
+  input[type="date"].control{ appearance:none;-webkit-appearance:none;-moz-appearance:none }
+
+  @media (max-width:640px){
+    .filters{ grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width:480px){
+    .filters{ grid-template-columns: 1fr; }
+  }
+
+  .chart-card{ padding: 0 12px 12px; }
+  .chart-wrap{
+    position: relative; width: 100%;
+    height: clamp(360px, 40vh, 520px);
+    border-radius: var(--br-md);
+    overflow-x: auto;
+    background:#fff;
+  }
+  .chart-wrap canvas{ min-width: 560px; display:block; }
+
+  .loading {
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.65); backdrop-filter:saturate(1.1) blur(1px);
+    z-index:2; font-weight:800; letter-spacing:.3px; border-radius: var(--br-md);
+  }
+  .loading.show{ display:flex; }
+  .loading::before{
+    content:""; width:18px; height:18px; margin-right:10px; border-radius:50%;
+    border:3px solid #b9e6e1; border-top-color:var(--brand-mid); animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+
+  .totals{ display:inline-flex; gap:8px; margin-left:auto; vertical-align:middle; }
+  .badge{
+    display:inline-flex; gap:6px; align-items:center; padding:4px 8px; border-radius:999px;
+    background:#e9fbf8; color:#0b4c59; font-weight:800; font-size:12px;
+    box-shadow:0 0 0 1px rgba(61,183,172,.25) inset;
+  }
+  .badge .dot{ width:10px; height:10px; border-radius:50% }
+  .badge.s07 .dot{ background:#3db7ac }
+  .badge.s16 .dot{ background:#0b4c59 }
+  .badge.meta .dot{ background:#e53935 }
+  .badge.pen .dot{ background:#6d4c41 }
+  .actions{
+    display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
+  }
+  .btn{
+    border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
+    background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18);
+    transition:filter .15s ease;
+  }
+  .btn:hover{ filter:brightness(1.05) }
+  .btn.secondary{ background:#93b8b5; color:#062f2c }
+  .link-btn{
+    text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:12px; padding:12px 14px; font-weight:800; background:var(--brand-dark); color:#fff;
+    box-shadow:0 6px 14px rgba(1,61,53,.18);
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <header class="card-header">
+      <h1 class="title">DISPONIBILIDADE EMPILHADEIRAS — PDN</h1>
+      <p class="subtitle">Resumo por período</p>
+    </header>
+
+    <!-- FILTROS -->
+    <section class="card" aria-label="Filtros">
+      <h2 class="section-title">FILTROS</h2>
+      <div class="filters">
+        <div class="field">
+          <label class="label" for="dtIni">Data inicial</label>
+          <input class="control" type="date" id="dtIni" />
+        </div>
+        <div class="field">
+          <label class="label" for="dtFim">Data final</label>
+          <input class="control" type="date" id="dtFim" />
+        </div>
+        <div class="field">
+          <label class="label" for="perIni">Período inicial</label>
+          <select class="control" id="perIni"></select>
+        </div>
+        <div class="field">
+          <label class="label" for="perFim">Período final</label>
+          <select class="control" id="perFim"></select>
+        </div>
+      </div>
+      <div class="actions" style="padding:0 12px 12px">
+        <button class="btn secondary" id="btnRecarregar">Recarregar</button>
+        <a href="index.html" class="link-btn">Voltar ao menu</a>
+      </div>
+    </section>
+
+    <!-- GRÁFICO POR PERÍODO -->
+    <section class="card chart-card" aria-label="Gráfico Por Período">
+      <h2 class="section-title">
+        GRÁFICO PERÍODO
+        <span class="totals">
+          <span class="badge s07"><span class="dot"></span><span id="tMedia07">Média 07ton: —</span></span>
+          <span class="badge s16"><span class="dot"></span><span id="tMedia16">Média 16ton: —</span></span>
+          <span class="badge meta"><span class="dot"></span>Meta: 3</span>
+        </span>
+      </h2>
+      <div class="chart-wrap">
+        <div class="loading" id="loadingPeriodo">Carregando…</div>
+        <canvas id="graficoPeriodo"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <!-- Chart.js + DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
+    const META_PADRAO = 3;
+
+    const PERIODOS = [
+      "00-01h","01-02h","02-03h","03-04h","04-05h","05-06h",
+      "06-07h","07-08h","08-09h","09-10h","10-11h","11-12h",
+      "12-13h","13-14h","14-15h","15-16h","16-17h","17-18h",
+      "18-19h","19-20h","20-21h","21-22h","22-23h","23-00h"
+    ];
+
+    function initPeriodos(){
+      const perIni = document.getElementById('perIni');
+      const perFim = document.getElementById('perFim');
+      perIni.add(new Option('— (todos) —',''));
+      perFim.add(new Option('— (todos) —',''));
+      PERIODOS.forEach(p=>{
+        perIni.add(new Option(p,p));
+        perFim.add(new Option(p,p));
+      });
+      perIni.value = '';
+      perFim.value = '';
+    }
+
+    function setDatasPadrao(){
+      const pad = n => String(n).padStart(2,'0');
+      const hoje = new Date();
+      const ini = new Date(); ini.setDate(hoje.getDate());
+      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const elIni = document.getElementById('dtIni');
+      const elFim = document.getElementById('dtFim');
+      if (elIni && !elIni.value) elIni.value = toISO(ini);
+      if (elFim && !elFim.value) elFim.value = toISO(hoje);
+    }
+
+    /* =======================
+       FETCH (PDN — barras duplas + linhas)
+       ======================= */
+    async function fetchPeriodoPDN(){
+      const dtIni = document.getElementById('dtIni').value;
+      const dtFim = document.getElementById('dtFim').value;
+      const perIni = document.getElementById('perIni').value;
+      const perFim = document.getElementById('perFim').value;
+
+      const params = new URLSearchParams({
+        action: 'mediaDMResumoPDN_BarrasDuplas',
+        dtIni, dtFim, periodoIni: perIni, periodoFim: perFim
+      });
+
+      try{
+        const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`, { cache: 'no-store' });
+        const json = await resp.json();
+        if (json && json.sucesso) return json; // {labels, s07, s16, meta, penalties}
+      }catch(e){
+        console.warn('fetchPeriodoPDN falhou:', e);
+      }
+      // fallback seguro
+      return { labels: [], s07: [], s16: [], meta: [], penalties: [] };
+    }
+
+    /* =======================
+       UI helpers
+       ======================= */
+    function setLoading(on){
+      const btn = document.getElementById('btnRecarregar');
+      const lp  = document.getElementById('loadingPeriodo');
+      if(on){
+        btn.disabled = true; btn.textContent = 'Carregando…';
+        lp.textContent = 'Carregando…';
+        lp.classList.add('show');
+      }else{
+        btn.disabled = false; btn.textContent = 'Recarregar';
+        lp.classList.remove('show');
+        lp.textContent = 'Carregando…';
+      }
+    }
+    function showWarn(msg){
+      const lp = document.getElementById('loadingPeriodo');
+      lp.textContent = msg;
+      lp.classList.add('show');
+      setTimeout(()=>{ lp.classList.remove('show'); lp.textContent='Carregando…'; }, 1800);
+    }
+    function mediaSemZeros(arr){
+      const v = (arr||[]).map(Number).filter(x=>!isNaN(x)&&x>0);
+      return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0;
+    }
+
+    /* largura dinâmica do canvas */
+    function ajustarLarguraCanvas(canvasId, labels, minWDesktop=760, minWMobile=960){
+      const canvas = document.getElementById(canvasId);
+      const wrap   = canvas.parentElement;
+      const isMobile    = window.innerWidth <= 640;
+      const pxPorRotulo = isMobile ? 48 : 40;
+      const minW        = isMobile ? minWMobile : minWDesktop;
+
+      const w = Math.max(minW, labels.length * pxPorRotulo);
+      const fallbackH = isMobile ? 380 : 460;
+      const h = Math.max(fallbackH, wrap ? wrap.clientHeight : 0);
+
+      canvas.width  = w;   canvas.style.width  = w + 'px';
+      canvas.height = h;   canvas.style.height = h + 'px';
+    }
+
+    Chart.register(ChartDataLabels);
+
+    /* =======================
+       GRÁFICO — 2 barras (07/16) + 2 linhas (meta/penalidade)
+       ======================= */
+    function desenharGrafico(labels, s07, s16, meta, penalties){
+      const isMobile = window.matchMedia('(max-width: 480px)').matches;
+      ajustarLarguraCanvas('graficoPeriodo', labels);
+
+      const ctx = document.getElementById('graficoPeriodo').getContext('2d');
+      if (window._chartPeriodo) window._chartPeriodo.destroy();
+
+      // fallback meta
+      if (!Array.isArray(meta) || meta.length !== labels.length) {
+        meta = new Array(labels.length).fill(META_PADRAO);
+      }
+
+      const cor07  = '#3db7ac';
+      const cor16  = '#0b4c59';
+      const corMeta= '#e53935';
+      const corPen = '#6d4c41';
+
+      const barMax = Math.max(
+        META_PADRAO + 2,
+        Math.ceil(Math.max( ...(s07||[0]), ...(s16||[0]), META_PADRAO ) + 1)
+      );
+
+      // badges de médias do último ponto (“Média Dia”) — se existir
+      const idxMediaDia = labels.lastIndexOf('Média Dia');
+      const md07  = idxMediaDia >= 0 ? (Number(s07[idxMediaDia])||0) : mediaSemZeros(s07);
+      const md16  = idxMediaDia >= 0 ? (Number(s16[idxMediaDia])||0) : mediaSemZeros(s16);
+      document.getElementById('tMedia07').textContent = `Média 07t: ${md07.toFixed(0)}`;
+      document.getElementById('tMedia16').textContent = `Média 16t: ${md16.toFixed(0)}`;
+
+      window._chartPeriodo = new Chart(ctx, {
+        data: {
+          labels,
+          datasets: [
+            {
+              type: 'bar',
+              label: '07 ton',
+              yAxisID: 'y',
+              data: s07,
+              backgroundColor: cor07,
+              borderColor: cor07,
+              borderWidth: 1,
+              maxBarThickness: isMobile ? 22 : 26,
+              categoryPercentage: isMobile ? 0.78 : 0.82,
+              barPercentage:       isMobile ? 0.78 : 0.82,
+              datalabels: {
+                color:'#083735', anchor:'center', align:'center', offset: -2, clamp:true,	
+                formatter: (v)=> Math.round(v),
+                font: { weight: 800, size: isMobile ? 9 : 12 }
+              }
+            },
+            {
+              type: 'bar',
+              label: '16 ton',
+              yAxisID: 'y',
+              data: s16,
+              backgroundColor: cor16,
+              borderColor: cor16,
+              borderWidth: 1,
+              maxBarThickness: isMobile ? 22 : 26,
+              categoryPercentage: isMobile ? 0.78 : 0.82,
+              barPercentage:       isMobile ? 0.78 : 0.82,
+              datalabels: {
+                color:'#FFF', anchor:'center', align:'center', offset: -2, clamp:true,
+                formatter: (v)=> Math.round(v),
+                font: { weight: 800, size: isMobile ? 9 : 12 }
+              }
+            },
+            {
+              type: 'line',
+              label: 'Meta',
+              yAxisID: 'y',
+              data: meta,
+              borderColor: corMeta,
+              borderWidth: 2,
+              borderDash: [4,3],
+              pointRadius: 0,
+              fill: false,
+              datalabels: { display: false }
+            }
+       
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                usePointStyle: true, pointStyle: 'rectRounded',
+                boxWidth: 10, boxHeight: 10,
+                font:{ size:isMobile?11:14 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (c) => {
+                  if (c.dataset.type === 'line') {
+                    return `${c.dataset.label}: ${c.parsed.y}`;
+                  }
+                  return `${c.dataset.label}: ${c.parsed.y}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              stacked: false,
+              ticks: {
+                autoSkip: false,
+                maxRotation: isMobile ? 90 : 45,
+                minRotation: isMobile ? 90 : 45,
+                font: { size: isMobile ? 8 : 11 }
+              },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              min: 0,
+	      display:false,
+              suggestedMax: barMax,
+              title: { display: false, text: 'Média (07t / 16t)' },
+              ticks: { precision: 0 }
+            },           
+          },
+          layout: { padding: { top: 6, right: 10, bottom: isMobile ? 64 : 52, left: 6 } }
+        }
+      });
+
+      // força rótulos visíveis no mobile
+      window._chartPeriodo.options.scales.x.ticks.minRotation = 90;
+      window._chartPeriodo.options.scales.x.ticks.maxRotation = 90;
+      window._chartPeriodo.options.scales.x.ticks.autoSkip   = false;
+      window._chartPeriodo.update();
+    }
+
+    /* =======================
+       CARREGAR
+       ======================= */
+    let _carregando = false;
+    async function carregar(){
+      if (_carregando) return;
+      _carregando = true;
+      setLoading(true);
+      try{
+        const p = await fetchPeriodoPDN();
+
+        if (!p.labels || p.labels.length === 0){
+          if (window._chartPeriodo){ window._chartPeriodo.destroy(); }
+          showWarn('Sem dados para o filtro selecionado.');
+          return;
+        }
+
+        // garante presença de “Média Dia” (se o back não mandar já incluso)
+        const labels = p.labels.slice();
+        let { s07=[], s16=[], meta=[], penalties=[] } = p;
+
+        if (!labels.includes('Média Dia')) {
+          const md07 = +mediaSemZeros(s07).toFixed(2);
+          const md16 = +mediaSemZeros(s16).toFixed(2);
+          labels.push('Média Dia');
+          s07 = [...s07, md07];
+          s16 = [...s16, md16];
+          meta = [...(Array.isArray(meta)&&meta.length?meta:new Array(labels.length-1).fill(META_PADRAO)), META_PADRAO];
+          // penalidade total do intervalo
+          const penTotal = (penalties||[]).reduce((a,b)=>a+Number(b||0),0);
+          penalties = [...(penalties||[]), penTotal];
+        }
+
+        desenharGrafico(labels, s07, s16, meta, penalties);
+      }catch(err){
+        console.error(err);
+        showWarn('Não foi possível carregar os dados.');
+      }finally{
+        setLoading(false);
+        _carregando = false;
+      }
+    }
+
+    document.getElementById('btnRecarregar').addEventListener('click', carregar);
+
+    // init
+    (function init(){
+      initPeriodos();
+      setDatasPadrao();
+      carregar();
+    })();
+  </script>
+</body>
+</html>
