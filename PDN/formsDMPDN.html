@@ -1,1 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Atualização Empilhadeiras — PDN</title>
+  <style>
+    :root{
+      --bg:#a3e0db;--brand-dark:#0b4c59;--brand-mid:#3db7ac;--white:#fff;--text:#0b1f1e;
+      --radius-lg:16px;--radius-md:12px;--radius-sm:8px;--shadow:0 8px 24px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;color:var(--text);background:var(--bg);-webkit-text-size-adjust:100%}
+    .app{max-width:680px;margin:16px auto;padding:16px}
+    .card-header{background:var(--brand-dark);color:var(--white);padding:20px 16px;border-radius:var(--radius-lg);box-shadow:var(--shadow);text-align:center}
+    .title{margin:0 0 4px;font-size:clamp(22px,5vw,36px);letter-spacing:.5px}
+    .subtitle{margin:0;opacity:.9;font-weight:600;font-size:clamp(14px,3.4vw,18px)}
+    .section-title{margin:20px 0 8px;background:#3db7ac;color:#0b1f1e;font-weight:800;letter-spacing:.5px;padding:10px 14px;border-radius:var(--radius-md)}
+    .card{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px}
+    .field{margin-bottom:14px}.label{display:block;font-weight:700;margin-bottom:8px}
+    .control,.control2{display:block;width:100%;min-height:44px;font-size:16px;padding:10px 12px;border:1px solid #cfd8dc;border-radius:var(--radius-sm);background:#f9fafa;outline:none}
+    .control2{padding:40px 12px}
+    .control:focus,.control2:focus{border-color:var(--brand-mid);box-shadow:0 0 0 3px rgba(61,183,172,.25);background:#fff}
+    input[type="datetime-local"].control{-webkit-appearance:none;appearance:none;max-width:100%;margin:0;padding-right:12px}
 
+    .actions{margin-top:8px}
+    .btn{width:100%;border:0;border-radius:12px;padding:28px 16px;font-weight:800;font-size:24px;color:#fff;background:var(--brand-dark);box-shadow:0 6px 14px rgba(1,61,53,.2);cursor:pointer}
+    .btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(1px)}
+
+    a.tile{
+      display:flex; align-items:center; justify-content:center;
+      background-color:#7BD3CB;
+      border-radius: 14px;
+      margin-top:8px;
+      padding: clamp(20px, 5vw, 28px);
+      text-decoration:none; color:inherit;
+      box-shadow: var(--shadow);
+      font-weight:800; letter-spacing:.3px;
+      font-size: clamp(16px, 3.8vw, 22px);
+      transition: transform .08s ease, box-shadow .2s ease, background .2s ease;
+    }
+    a.tile:hover{ box-shadow:0 12px 28px rgba(0,0,0,.12); background:#cfeeed }
+    a.tile:active{ transform: scale(.985) }
+    a.tile *{ pointer-events:none }
+
+    /* ===== Empilhadeiras (2 colunas com pílulas) ===== */
+    .emp-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px 14px;
+      align-items:start;
+    }
+    @media (max-width:520px){ .emp-grid{ grid-template-columns: 1fr } }
+
+    .check-pill{
+      display:flex; align-items:center; gap:10px;
+      padding:12px 14px;
+      background:#f9fbfb;
+      border:1px solid #cfd8dc;
+      border-radius:12px;
+      min-height:46px;
+      transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .check-pill input[type="checkbox"]{ width:18px; height:18px; accent-color:#0b4c59; }
+    .check-pill span{ letter-spacing:.3px; color:#0b1f1e; }
+    .check-pill input:checked + span{ color:#0b4c59; font-weight:800 }
+    .check-pill:has(input:checked){ background:#fff; border-color:#3db7ac; box-shadow:0 0 0 3px rgba(61,183,172,.22); }
+
+    /* Aviso discreto */
+    .toast{
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: 14px; background:#0b4c59; color:#fff; padding:10px 14px;
+      border-radius:999px; box-shadow: var(--shadow); font-weight:800;
+      opacity:0; pointer-events:none; transition:.25s ease;
+    }
+    .toast.show{ opacity:1 }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="card-header">
+      <h1 class="title">ATUALIZAÇÃO EMPILHADEIRAS</h1>
+      <p class="subtitle">PDN — Disponibilidade Mecânica</p>
+    </header>
+
+    <section class="card" aria-label="Formulário">
+      <form id="form-pdn" action="#" method="post">
+        <!-- DATA -->
+        <h2 class="section-title">DATA</h2>
+        <div class="field">
+          <input id="dt-os" class="control" type="date" required />
+        </div>
+
+        <!-- PERÍODO -->
+        <h2 class="section-title">PERÍODO</h2>
+        <div class="field">
+          <input id="periodo" name="periodo" class="control" list="periodos" required placeholder="Digite ou escolha" />
+          <datalist id="periodos">
+            <option value="00-01h"><option value="01-02h"><option value="02-03h"><option value="03-04h">
+            <option value="04-05h"><option value="05-06h"><option value="06-07h"><option value="07-08h">
+            <option value="08-09h"><option value="09-10h"><option value="10-11h"><option value="11-12h"><option value="12-13h">
+            <option value="13-14h"><option value="14-15h"><option value="15-16h"><option value="16-17h"><option value="17-18h">
+            <option value="18-19h"><option value="19-20h"><option value="20-21h"><option value="21-22h"><option value="22-23h">
+            <option value="23-00h">
+          </datalist>
+        </div>
+
+        <!-- 07 TON -->
+        <h2 class="section-title" id="h2-07-d">EMPILHADEIRAS 07t DISPONÍVEIS (0)</h2>
+        <div class="field"><div id="list07Disp" class="emp-grid"></div></div>
+
+        <h2 class="section-title" id="h2-07-m">EMPILHADEIRAS 07t EM MANUTENÇÃO (0)</h2>
+        <div class="field"><div id="list07Man" class="emp-grid"></div></div>
+
+        <!-- 16 TON -->
+        <h2 class="section-title" id="h2-16-d">EMPILHADEIRAS 16t DISPONÍVEIS (0)</h2>
+        <div class="field"><div id="list16Disp" class="emp-grid"></div></div>
+
+        <h2 class="section-title" id="h2-16-m">EMPILHADEIRAS 16t EM MANUTENÇÃO (0)</h2>
+        <div class="field"><div id="list16Man" class="emp-grid"></div></div>
+
+        <div class="actions">
+          <button class="btn" id="btnEnviar" type="submit">Registrar</button>
+        </div>
+      </form>
+
+      <a class="tile" href="./index.html">⬅️ VOLTAR AO MENU</a>
+      <a class="tile" href="#">🚪 SAIR</a>
+    </section>
+  </main>
+
+  <div id="toast" class="toast">Mensagem</div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec";
+
+    // Estado
+    let FROTA07 = []; // placas 07t
+    let FROTA16 = []; // placas 16t
+    const sel07Disp = new Set();
+    const sel07Man  = new Set();
+    const sel16Disp = new Set();
+    const sel16Man  = new Set();
+
+    const form = document.getElementById('form-pdn');
+    const btn  = document.getElementById('btnEnviar');
+
+    const pad = n => String(n).padStart(2,'0');
+    const showToast = (msg) => {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(()=> t.classList.remove('show'), 1800);
+    };
+
+    // ===== API =====
+    async function apiGetFrotaPDN(){
+      // Esperado do Apps Script: {sucesso:true, emp07:[...], emp16:[...]}
+      const params = new URLSearchParams({ action: 'getFrotaPDN' });
+      try{
+        const resp = await fetch(`${API_URL}?${params.toString()}`, { cache:'no-store' });
+        const json = await resp.json();
+        if (json && json.sucesso){
+          return { emp07: json.emp07 || [], emp16: json.emp16 || [] };
+        }
+      }catch(e){
+        console.warn('getFrotaPDN falhou', e);
+      }
+      return { emp07: [], emp16: [] };
+    }
+
+    async function apiSalvarDMPDN(payload){
+      const body = 'dados=' + encodeURIComponent(JSON.stringify({
+        action: 'salvarDMPDN',
+        sheet : 'lancamentosDM_PDN',     // para o backend saber a aba
+        dados : payload                  // contém campos 07t e 16t separadamente
+      }));
+      const resp = await fetch(API_URL, {
+        method:'POST',
+        headers:{ 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
+      return resp.json();
+    }
+
+    // ===== RENDER =====
+    function makeCheck(code, setRef, outroSetMesmoGrupo, renderAllCb){
+      const lbl = document.createElement('label');
+      lbl.className = 'check-pill';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = setRef.has(code);
+
+      const span = document.createElement('span');
+      span.textContent = code;
+
+      input.addEventListener('change', ()=>{
+        if (input.checked){
+          setRef.add(code);
+          // exclusão cruzada (dentro do mesmo grupo 07 ou 16)
+          outroSetMesmoGrupo.delete(code);
+        }else{
+          setRef.delete(code);
+        }
+        renderAllCb();
+      });
+
+      lbl.appendChild(input);
+      lbl.appendChild(span);
+      return lbl;
+    }
+
+    function renderAll(){
+      // 07t
+      const c07d = document.getElementById('list07Disp');
+      const c07m = document.getElementById('list07Man');
+      c07d.innerHTML = ''; c07m.innerHTML = '';
+      FROTA07.filter(p => !sel07Man.has(p)).forEach(p => c07d.appendChild(makeCheck(p, sel07Disp, sel07Man, renderAll)));
+      FROTA07.filter(p => !sel07Disp.has(p)).forEach(p => c07m.appendChild(makeCheck(p, sel07Man, sel07Disp, renderAll)));
+      document.getElementById('h2-07-d').textContent = `EMPILHADEIRAS 07t DISPONÍVEIS (${sel07Disp.size})`;
+      document.getElementById('h2-07-m').textContent = `EMPILHADEIRAS 07t EM MANUTENÇÃO (${sel07Man.size})`;
+
+      // 16t
+      const c16d = document.getElementById('list16Disp');
+      const c16m = document.getElementById('list16Man');
+      c16d.innerHTML = ''; c16m.innerHTML = '';
+      FROTA16.filter(p => !sel16Man.has(p)).forEach(p => c16d.appendChild(makeCheck(p, sel16Disp, sel16Man, renderAll)));
+      FROTA16.filter(p => !sel16Disp.has(p)).forEach(p => c16m.appendChild(makeCheck(p, sel16Man, sel16Disp, renderAll)));
+      document.getElementById('h2-16-d').textContent = `EMPILHADEIRAS 16t DISPONÍVEIS (${sel16Disp.size})`;
+      document.getElementById('h2-16-m').textContent = `EMPILHADEIRAS 16t EM MANUTENÇÃO (${sel16Man.size})`;
+    }
+
+    // ===== Helpers =====
+    function validarGrupos(){
+      const falt07 = FROTA07.filter(p=>!sel07Disp.has(p) && !sel07Man.has(p));
+      const dup07  = FROTA07.filter(p=> sel07Disp.has(p) &&  sel07Man.has(p));
+      const falt16 = FROTA16.filter(p=>!sel16Disp.has(p) && !sel16Man.has(p));
+      const dup16  = FROTA16.filter(p=> sel16Disp.has(p) &&  sel16Man.has(p));
+
+      if (falt07.length || dup07.length || falt16.length || dup16.length){
+        let msg = '⚠️ Classifique todas as placas em exatamente um status.\n';
+        if (dup07.length)  msg += `\n07t em ambos: ${dup07.join(', ')}`;
+        if (falt07.length) msg += `\n07t sem status: ${falt07.join(', ')}`;
+        if (dup16.length)  msg += `\n16t em ambos: ${dup16.join(', ')}`;
+        if (falt16.length) msg += `\n16t sem status: ${falt16.join(', ')}`;
+        alert(msg);
+        return false;
+      }
+      return true;
+    }
+
+    function limparTudo(){
+      form.reset();
+      sel07Disp.clear(); sel07Man.clear();
+      sel16Disp.clear(); sel16Man.clear();
+      renderAll();
+      // mantém a data vazia para o próximo lançamento retroativo
+      document.getElementById('periodo').value = '';
+    }
+
+    // ===== Submit =====
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if (!validarGrupos()) return;
+
+      const dados = {
+        sheet: 'lancamentosDM_PDN',
+        data: document.getElementById('dt-os').value,     // usa a data escolhida (retroativo OK)
+        periodo: document.getElementById('periodo').value,
+
+        // 07t -> colunas C (disp) e D (man)
+        emp07_disp: Array.from(sel07Disp).join(','),
+        emp07_man : Array.from(sel07Man ).join(','),
+
+        // 16t -> colunas G (disp) e H (man)
+        emp16_disp: Array.from(sel16Disp).join(','),
+        emp16_man : Array.from(sel16Man ).join(',')
+      };
+
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      try{
+        const r = await apiSalvarDMPDN(dados);
+        if (r && r.sucesso){
+          showToast('✅ Registro salvo!');
+          limparTudo();
+        }else{
+          alert('❌ Falha ao salvar.' + (r && r.mensagem ? `\n${r.mensagem}` : ''));
+        }
+      }catch(err){
+        console.error(err);
+        alert('❌ Erro de comunicação com o servidor.');
+      }finally{
+        btn.disabled = false; btn.textContent = 'Registrar';
+      }
+    });
+
+    // ===== Boot =====
+    (async function init(){
+      // data padrão = hoje (pode ser alterada para retroativo)
+      const d = new Date();
+      document.getElementById('dt-os').value =
+        `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+      const { emp07, emp16 } = await apiGetFrotaPDN();
+      FROTA07 = emp07 || [];
+      FROTA16 = emp16 || [];
+
+      // fallback se API ainda não estiver pronta
+      if (!FROTA07.length && !FROTA16.length){
+        FROTA07 = ["EMP0701","EMP0702","EMP0703"];
+        FROTA16 = ["EMP1601","EMP1602"];
+      }
+
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
