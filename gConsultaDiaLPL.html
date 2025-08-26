@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>DM — Gráfico Resumo (Período)</title>
+<title>DM — Gráfico (Período)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -29,7 +29,7 @@
     text-align:center;
   }
   .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
-  .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(13px,3.2vw,16px) }
+  .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(12px,2.1vw,14px) }
 
   .card{
     margin-top:12px; background:var(--white);
@@ -40,7 +40,7 @@
     margin:12px; background:#3db7ac; color:#0b1f1e;
     font-weight:800; letter-spacing:.4px;
     padding:10px 14px; border-radius: var(--br-md);
-    display:flex; align-items:center;
+    display:flex; align-items:center; gap:10px;
     font-size: clamp(14px, 2.5vw, 18px); /* títulos menores */
   }
 
@@ -67,16 +67,16 @@
     position: relative; width: 100%;
     height: clamp(360px, 40vh, 520px);
     border-radius: var(--br-md);
-    overflow-x: auto; /* mantém todos os rótulos visíveis no mobile */
+    overflow-x: auto;
     background:#fff;
   }
   .chart-wrap canvas{ min-width: 560px; display:block; }
 
-  /* overlay de loading dentro do .chart-wrap */
+  /* overlay de loading / aviso */
   .loading {
     position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-    background:rgba(255,255,255,.6); backdrop-filter:saturate(1.2) blur(1px); z-index:2;
-    font-weight:800; letter-spacing:.3px; border-radius: var(--br-md);
+    background:rgba(255,255,255,.65); backdrop-filter:saturate(1.1) blur(1px);
+    z-index:2; font-weight:800; letter-spacing:.3px; border-radius: var(--br-md);
   }
   .loading.show{ display:flex; }
   .loading::before{
@@ -94,7 +94,6 @@
   }
   .badge .dot{ width:10px; height:10px; border-radius:50% }
   .badge.media .dot{ background:#3db7ac }
-  .badge.pen  .dot{ background:#183153 }
 
   .actions{
     display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px;
@@ -152,7 +151,7 @@
       <h2 class="section-title">
         GRÁFICO POR PERÍODO
         <span class="totals">
-          <span class="badge media"><span class="dot"></span><span id="tMediaPeriodo">Média: —</span></span>         
+          <span class="badge media"><span class="dot"></span><span id="tMediaPeriodo">Média: —</span></span>
         </span>
       </h2>
       <div class="chart-wrap">
@@ -202,60 +201,71 @@
     }
 
     /* =======================
-       FETCH
+       FETCH (robusto, sem alert)
        ======================= */
     async function fetchPeriodo(){
       const dtIni = document.getElementById('dtIni').value;
       const dtFim = document.getElementById('dtFim').value;
       const perIni = document.getElementById('perIni').value;
-      const perFim = document.getElementById('perFim').value; // corrigido
+      const perFim = document.getElementById('perFim').value;
 
       const params = new URLSearchParams({
         action: 'mediaDMResumo',
         dtIni, dtFim, periodoIni: perIni, periodoFim: perFim
       });
 
-      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
-      const json = await resp.json();
-      if(!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter dados (período)');
-      return json; // {labels, values, counts, penalties}
+      try{
+        const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`, { cache: 'no-store' });
+        const json = await resp.json();
+        if (json && json.sucesso) return json; // {labels, values, counts, penalties}
+      }catch(e){
+        console.warn('fetchPeriodo falhou:', e);
+      }
+      // fallback seguro
+      return { labels: [], values: [], counts: [] };
     }
 
     /* =======================
-       UTIL / UI
+       UI helpers
        ======================= */
     function setLoading(on){
       const btn = document.getElementById('btnRecarregar');
       const lp  = document.getElementById('loadingPeriodo');
       if(on){
         btn.disabled = true; btn.textContent = 'Carregando…';
+        lp.textContent = 'Carregando…';
         lp.classList.add('show');
       }else{
         btn.disabled = false; btn.textContent = 'Recarregar';
         lp.classList.remove('show');
+        lp.textContent = 'Carregando…';
       }
     }
-
-    function setTotaisPeriodo(media, penal){
-      document.getElementById('tMediaPeriodo').textContent = `Média: ${Number(media||0).toFixed(0)}`;
-      document.getElementById('tPenPeriodo').textContent   = `Penalidade: R$ ${Number(penal||0).toFixed(0)}`;
+    function showWarn(msg){
+      const lp = document.getElementById('loadingPeriodo');
+      lp.textContent = msg;
+      lp.classList.add('show');
+      setTimeout(()=>{ lp.classList.remove('show'); lp.textContent='Carregando…'; }, 1800);
     }
-
+    function setTotaisPeriodo(media){
+      document.getElementById('tMediaPeriodo').textContent =
+        `Média: ${Number(media||0).toFixed(0)}`;
+    }
     function mediaSemZeros(arr){
-      const v = (arr||[]).map(Number).filter(x => !isNaN(x) && x>0);
+      const v = (arr||[]).map(Number).filter(x=>!isNaN(x)&&x>0);
       return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0;
     }
 
     /* =======================
-       RENDER HELPERS
+       Canvas com largura dinâmica para ver todos os rótulos
        ======================= */
     function ajustarLarguraCanvas(canvasId, labels, minWDesktop=700, minWMobile=900){
       const canvas = document.getElementById(canvasId);
       const wrap   = canvas.parentElement;
 
-      const isMobile   = window.innerWidth <= 640;
-      const pxPorRotulo = isMobile ? 44 : 36;   /* garante todos rótulos visíveis */
-      const minW       = isMobile ? minWMobile : minWDesktop;
+      const isMobile    = window.innerWidth <= 640;
+      const pxPorRotulo = isMobile ? 44 : 36; // mais espaço no mobile
+      const minW        = isMobile ? minWMobile : minWDesktop;
 
       const w = Math.max(minW, labels.length * pxPorRotulo);
       const fallbackH = isMobile ? 360 : 420;
@@ -270,7 +280,7 @@
     Chart.register(ChartDataLabels);
 
     /* =======================
-       GRÁFICO POR PERÍODO (sem linha de Penalidades)
+       GRÁFICO POR PERÍODO (sem penalidades)
        ======================= */
     function desenharGraficoPeriodo(labels, values, counts){
       const isMobile = window.matchMedia('(max-width: 480px)').matches;
@@ -292,7 +302,7 @@
       window._chartPeriodo = new Chart(ctx, {
         data: {
           labels,
-          _counts: counts,
+          _counts: counts, // para tooltip
           datasets: [
             {
               type: 'bar',
@@ -313,7 +323,7 @@
                 offset:  (c) => isMediaDia(c) ? 0 : -4,
                 clamp: true,
                 formatter: (v) => Math.round(v),
-                font: { weight: 800, size: isMobile ? 8 : 10 }
+                font: { weight: 800, size: isMobile ? 8 : 14 }
               }
             },
             {
@@ -328,7 +338,6 @@
               fill: false,
               datalabels: { display: false }
             }
-            /* Removida a série de Penalidades (linha) */
           ]
         },
         options: {
@@ -338,15 +347,18 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, font:{size:isMobile?11:12} }
+              labels: {
+                usePointStyle: true, pointStyle: 'rectRounded',
+                boxWidth: 10, boxHeight: 10,
+                font:{ size:isMobile?11:14 }
+              }
             },
             tooltip: {
               callbacks: {
-                label: (c) => {
-                  if (c.dataset.type === 'line')   return `${c.dataset.label}`;
-                  return ` Média: ${c.parsed.y}`;
-                },
+                label: (c) => (c.dataset.type==='line')
+                  ? `${c.dataset.label}` : ` Média: ${c.parsed.y}`,
                 afterLabel: (c) => {
+                  if (c.dataset.type === 'line') return '';
                   const q = (c.chart.data._counts || [])[c.dataIndex] || 0;
                   return q ? ` Registros: ${q}` : '';
                 }
@@ -377,6 +389,7 @@
         }
       });
 
+      // força rótulos visíveis no mobile
       window._chartPeriodo.options.scales.x.ticks.minRotation = 90;
       window._chartPeriodo.options.scales.x.ticks.maxRotation = 90;
       window._chartPeriodo.options.scales.x.ticks.autoSkip   = false;
@@ -386,35 +399,39 @@
     /* =======================
        CARREGAR
        ======================= */
+    let _carregando = false;
     async function carregar(){
+      if (_carregando) return;
+      _carregando = true;
       setLoading(true);
       try{
         const p = await fetchPeriodo();
 
-        // PERÍODO
+        if (!p.labels || p.labels.length === 0){
+          if (window._chartPeriodo){ window._chartPeriodo.destroy(); }
+          showWarn('Sem dados para o filtro selecionado.');
+          return;
+        }
+
         const labelsP = (p.labels || []).slice();
         const valuesP = (p.values || []).map(v=>+v||0);
         const countsP = (p.counts || []).map(v=>+v||0);
-        const pensP   = (p.penalties || []).map(v=>+v||0);
 
         // Se o backend não mandar "Média Dia", acrescenta no front
         if (!labelsP.includes('Média Dia')) {
           labelsP.push('Média Dia');
           valuesP.push(+mediaSemZeros(valuesP).toFixed(2));
           countsP.push(valuesP.filter(v=>v>0).length);
-          pensP.push(pensP.reduce((a,b)=>a+b,0));
         }
 
         desenharGraficoPeriodo(labelsP, valuesP, countsP);
-
-        // Totalizadores (usa o último ponto para média + soma de penal do período)
-        setTotaisPeriodo(valuesP[valuesP.length-1], pensP[pensP.length-1]);
-
+        setTotaisPeriodo(valuesP.at(-1));
       }catch(err){
         console.error(err);
-        alert('Não foi possível carregar os dados.');
+        showWarn('Não foi possível carregar os dados.');
       }finally{
         setLoading(false);
+        _carregando = false;
       }
     }
 
