@@ -40,7 +40,8 @@
     margin:12px; background:#3db7ac; color:#0b1f1e;
     font-weight:800; letter-spacing:.4px;
     padding:10px 14px; border-radius: var(--br-md);
-    display: flex; align-items: center;
+    display:flex; align-items:center;
+    font-size: clamp(12px, 2.1vw, 14px); /* títulos menores */
   }
 
   .filters{ display:grid; gap:10px 12px; grid-template-columns: 1fr 1fr 1fr 1fr; padding:0 12px 6px; }
@@ -57,7 +58,7 @@
   @media (max-width:640px){
     .filters{ grid-template-columns: 1fr 1fr; }
   }
-  @media (max-width:640px){
+  @media (max-width:480px){
     .filters{ grid-template-columns: 1fr; }
   }
 
@@ -149,7 +150,7 @@
     <!-- GRÁFICO POR PERÍODO -->
     <section class="card chart-card" aria-label="Gráfico Por Período">
       <h2 class="section-title">
-        GRÁFICO (PERÍODO)
+        GRÁFICO POR PERÍODO
         <span class="totals">
           <span class="badge media"><span class="dot"></span><span id="tMediaPeriodo">Média: —</span></span>
           <span class="badge pen"><span class="dot"></span><span id="tPenPeriodo">Penalidade - R$: —</span></span>
@@ -164,7 +165,7 @@
     <!-- GRÁFICO POR DIA -->
     <section class="card chart-card" aria-label="Gráfico Por Dia">
       <h2 class="section-title">
-        GRÁFICO (DIA)
+        GRÁFICO POR DIA
         <span class="totals">
           <span class="badge media"><span class="dot"></span><span id="tMediaDia">Média: —</span></span>
           <span class="badge pen"><span class="dot"></span><span id="tPenDia">Penalidade - R$: —</span></span>
@@ -224,11 +225,11 @@
       const dtIni = document.getElementById('dtIni').value;
       const dtFim = document.getElementById('dtFim').value;
       const perIni = document.getElementById('perIni').value;
-      const perFim = document.getElementById('perFim').value;
+      thePerFim = document.getElementById('perFim').value;
 
       const params = new URLSearchParams({
         action: 'mediaDMResumo',
-        dtIni, dtFim, periodoIni: perIni, periodoFim: perFim
+        dtIni, dtFim, periodoIni: perIni, periodoFim: thePerFim
       });
 
       const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
@@ -290,11 +291,11 @@
       const wrap   = canvas.parentElement;
 
       const isMobile   = window.innerWidth <= 640;
-      const pxPorRotulo = isMobile ? 44 : 36;
+      const pxPorRotulo = isMobile ? 44 : 36;   /* garante todos rótulos visíveis */
       const minW       = isMobile ? minWMobile : minWDesktop;
 
       const w = Math.max(minW, labels.length * pxPorRotulo);
-      const fallbackH = isMobile ? 320 : 380;
+      const fallbackH = isMobile ? 360 : 420;
       const h = Math.max(fallbackH, wrap ? wrap.clientHeight : 0);
 
       canvas.width  = w;
@@ -350,7 +351,7 @@
                 offset:  (c) => isMediaDia(c) ? 0 : -4,
                 clamp: true,
                 formatter: (v) => Math.round(v),
-                font: { weight: 800, size: isMobile ? 8 : 10 }
+                font: { weight: 800, size: isMobile ? 8 : 14 }
               }
             },
             {
@@ -384,7 +385,7 @@
                 rotation: -90,
                 offset: 2,
                 formatter: (v) => `R$ ${Math.round(v)}`,
-                font: { weight: 800, size: isMobile ? 7 : 9 }
+                font: { weight: 800, size: isMobile ? 8 : 11 }
               }
             }
           ]
@@ -396,7 +397,7 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, font:{size:isMobile?11:12} }
+              labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, font:{size:isMobile?11:14} }
             },
             tooltip: {
               callbacks: {
@@ -466,8 +467,8 @@
 
       const baseBar   = '#3db7ac';
       const destaque  = '#0b4c59';
-      const isMediaDias = (lbl, i) => lbl === 'Média Dias' || i === labelsDias.length - 1;
-      const colorsDia   = labelsDias.map((lbl, i) => isMediaDias(lbl, i) ? destaque : baseBar);
+      const isMedia = (lbl, i) => lbl === 'Média' || i === labelsDias.length - 1;
+      const colorsDia = labelsDias.map((lbl, i) => isMedia(lbl, i) ? destaque : baseBar);
 
       const maxBar = Math.max(META + 2, Math.ceil(Math.max(...mediasDia, META) + 1));
 
@@ -488,11 +489,11 @@
                 display: true,
                 color: (c) => {
                   const i = c.dataIndex, lbl = c.chart.data.labels[i];
-                  return (lbl === 'Média Dias' || i === c.chart.data.labels.length -1) ? '#fff' : '#083735';
+                  return (lbl === 'Média' || i === c.chart.data.labels.length -1) ? '#fff' : '#083735';
                 },
                 anchor:'center', align:'center', offset:0,
                 formatter: (v)=>Math.round(v),
-                font:{weight:800, size:isMobile?8:10}
+                font:{weight:800, size:isMobile?8:14}
               }
             },
             {
@@ -524,7 +525,7 @@
                 anchor:'end', align:'top', offset:2,
                 rotation: -90,
                 formatter: (v) => `R$ ${Math.round(v)}`,
-                font:{weight:800, size:isMobile?7:9}
+                font:{weight:800, size:isMobile?8:11}
               }
             }
           ]
@@ -533,7 +534,7 @@
           responsive:true, maintainAspectRatio:false,
           plugins:{
             legend:{ display:true, position:'top',
-              labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, font:{size:isMobile?11:12} }
+              labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, font:{size:isMobile?11:14} }
             },
             tooltip:{
               callbacks:{
@@ -578,7 +579,7 @@
     }
 
     /* =======================
-       CARREGAR TUDO (agora com Promise.all + loading + totalizadores)
+       CARREGAR TUDO
        ======================= */
     async function carregar(){
       setLoading(true);
@@ -587,54 +588,56 @@
 
         // ===== PERÍODO =====
         const labelsP = (p.labels || []).slice();
-   	const valuesP = (p.values || []).map(v=>+v||0);
-    	const countsP = (p.counts || []).map(v=>+v||0);
-    	const pensP   = (p.penalties || []).map(v=>+v||0);
+        const valuesP = (p.values || []).map(v=>+v||0);
+        const countsP = (p.counts || []).map(v=>+v||0);
+        const pensP   = (p.penalties || []).map(v=>+v||0);
 
-      // Se o backend não mandar "Média Dia" (hoje manda), acrescenta no front
-    	if (!labelsP.includes('Média Dia')) {
-      	labelsP.push('Média Dia');
-      	valuesP.push(+mediaSemZeros(valuesP).toFixed(2));
-      	countsP.push(valuesP.filter(v=>v>0).length);
-    	pensP.push(pensP.reduce((a,b)=>a+b,0));
-    	}
-    	desenharGraficoPeriodo(labelsP, valuesP, countsP, pensP);
-    	setTotaisPeriodo(valuesP[valuesP.length-1], pensP[pensP.length-1]);
+        // Se o backend não mandar "Média Dia" (hoje manda), acrescenta no front
+        if (!labelsP.includes('Média Dia')) {
+          labelsP.push('Média Dia');
+          valuesP.push(+mediaSemZeros(valuesP).toFixed(2));
+          countsP.push(valuesP.filter(v=>v>0).length);
+          pensP.push(pensP.reduce((a,b)=>a+b,0));
+        }
+        desenharGraficoPeriodo(labelsP, valuesP, countsP, pensP);
+        setTotaisPeriodo(valuesP[valuesP.length-1], pensP[pensP.length-1]);
 
         // ===== DIA =====
         const diasISO = d.days || [];
-    	let mediasDia = (d.avg || []).map(v => +v || 0);
-    	let penalDia  = (d.pen || []).map(v => +v || 0);
+        let mediasDia = (d.avg || []).map(v => +v || 0);
+        let penalDia  = (d.pen || []).map(v => +v || 0);
 
-    	// Converte YYYY-MM-DD -> DD/MM (preserva "Média Dias" se já vier)
-    	const diasBr = diasISO.map(s=>{
-      	const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
-      	return m ? `${m[3]}/${m[2]}` : s;
-    	});
+        // Converte YYYY-MM-DD -> DD/MM
+        const diasBr = diasISO.map(s=>{
+          const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+          return m ? `${m[3]}/${m[2]}` : s;
+        });
 
-	// Se o backend já enviou "Média Dias", não duplica
-	let mediaDiasTotal, penTotal;
-    	if (diasBr.length && diasBr[diasBr.length - 1] === 'Média Dias') {
-      	mediaDiasTotal = mediasDia[mediasDia.length - 1] || 0;
-      	penTotal       = penalDia[penalDia.length - 1]   || 0;
-    	} else {
-      	mediaDiasTotal = +mediaSemZeros(mediasDia).toFixed(2);
-      	penTotal       = penalDia.reduce((a,b)=>a+b,0);
-      	diasBr.push('Média Dias');
-      	mediasDia.push(mediaDiasTotal);
-      	penalDia.push(penTotal);
-    	}
+        // Se backend mandou "Média Dias", renomeia para "Média"; se não mandou, adiciona
+        if (diasBr.length && (diasBr[diasBr.length-1] === 'Média Dias' || diasBr[diasBr.length-1] === 'Média')) {
+          diasBr[diasBr.length-1] = 'Média';
+        } else {
+          const mediaTotal = +mediaSemZeros(mediasDia).toFixed(2);
+          const penTotal   = penalDia.reduce((a,b)=>a+b,0);
+          diasBr.push('Média');
+          mediasDia.push(mediaTotal);
+          penalDia.push(penTotal);
+        }
 
-    	desenharGraficoDia(diasBr, mediasDia, penalDia);
-    	setTotaisDia(mediaDiasTotal, penTotal);
+        desenharGraficoDia(diasBr, mediasDia, penalDia);
 
-    } catch (err){
-    	console.error(err);
-    	alert('Não foi possível carregar os dados.');
-    	} finally {
-    setLoading(false);
+        // totalizadores (usa último ponto)
+        const mediaUlt = mediasDia[mediasDia.length-1] || 0;
+        const penUlt   = penalDia[penalDia.length-1]   || 0;
+        setTotaisDia(mediaUlt, penUlt);
+
+      }catch(err){
+        console.error(err);
+        alert('Não foi possível carregar os dados.');
+      }finally{
+        setLoading(false);
+      }
     }
-  }
 
     document.getElementById('btnRecarregar').addEventListener('click', carregar);
 
