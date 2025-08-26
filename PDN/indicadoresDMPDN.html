@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>PDN — Gráfico Resumo (Período + Dia)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#e8fffb; --brand-dark:#0b4c59; --brand-mid:#3db7ac; --white:#fff; --text:#0b1f1e;
+    --shadow:0 8px 24px rgba(0,0,0,.08);
+    --br-lg:16px; --br-md:12px; --br-sm:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: clamp(8px, 2vw, 16px);
+  }
+  .app{ width:min(980px, 100%); margin:auto; }
+
+  .card-header{
+    background:var(--brand-dark); color:#fff;
+    padding: clamp(18px,5vw,28px) clamp(14px,4vw,20px);
+    border-radius: var(--br-lg);
+    box-shadow: var(--shadow);
+    text-align:center;
+  }
+  .title{ margin:0; font-weight:900; letter-spacing:.4px; font-size:clamp(22px,5vw,34px) }
+  .subtitle{ margin:.25rem 0 0; opacity:.9; font-weight:600; font-size:clamp(13px,3.2vw,16px) }
+
+  .card{ margin-top:12px; background:var(--white); border-radius: var(--br-lg); box-shadow: var(--shadow); overflow:hidden; }
+  .card::before{ content:""; display:block; height:18px; background:var(--brand-mid) }
+  .section-title{
+    margin:12px; background:#3db7ac; color:#0b1f1e;
+    font-weight:800; letter-spacing:.4px;
+    padding:10px 14px; border-radius: var(--br-md);
+    display:flex; align-items:center; gap:10px;
+    font-size: clamp(12px, 2.1vw, 14px);
+  }
+
+  .filters{ display:grid; gap:10px 12px; grid-template-columns: 1fr 1fr 1fr 1fr; padding:0 12px 6px; }
+  .filters .field{ display:flex; flex-direction:column; gap:6px; }
+  .label{ font-weight:800; letter-spacing:.3px }
+  .control{
+    display:block; width:100%; min-height:44px; font-size:16px;
+    padding:10px 12px; border:1px solid #cfd8dc; border-radius:var(--br-sm);
+    background:#f9fafa; outline:none;
+  }
+  .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
+  input[type="date"].control{ appearance:none;-webkit-appearance:none;-moz-appearance:none }
+
+  @media (max-width:640px){ .filters{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width:480px){ .filters{ grid-template-columns: 1fr; } }
+
+  .chart-card{ padding: 0 12px 12px; }
+  .chart-wrap{
+    position: relative; width: 100%;
+    height: clamp(360px, 42vh, 560px);
+    border-radius: var(--br-md);
+    overflow-x: auto;
+    background:#fff;
+  }
+  .chart-wrap canvas{ min-width: 640px; display:block; }
+
+  .loading {
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.65); backdrop-filter:saturate(1.1) blur(1px);
+    z-index:2; font-weight:800; letter-spacing:.3px; border-radius: var(--br-md);
+  }
+  .loading.show{ display:flex; }
+  .loading::before{
+    content:""; width:18px; height:18px; margin-right:10px; border-radius:50%;
+    border:3px solid #b9e6e1; border-top-color:var(--brand-mid); animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+
+  .totals{ display:inline-flex; gap:8px; margin-left:auto; vertical-align:middle; }
+  .badge{
+    display:inline-flex; gap:6px; align-items:center; padding:4px 8px; border-radius:999px;
+    background:#e9fbf8; color:#0b4c59; font-weight:800; font-size:12px;
+    box-shadow:0 0 0 1px rgba(61,183,172,.25) inset;
+  }
+  .badge .dot{ width:10px; height:10px; border-radius:50% }
+  .badge.media .dot{ background:#3db7ac }
+  .badge.pen  .dot{ background:#183153 }
+
+  .actions{ display:flex; gap:10px; justify-content:flex-end; margin:10px 12px 12px; }
+  .btn{ border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
+       background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18); transition:filter .15s ease; }
+  .btn:hover{ filter:brightness(1.05) }
+  .btn.secondary{ background:#93b8b5; color:#062f2c }
+  .link-btn{ text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:12px; padding:12px 14px; font-weight:800; background:var(--brand-dark); color:#fff;
+    box-shadow:0 6px 14px rgba(1,61,53,.18);
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <header class="card-header">
+      <h1 class="title">DISPONIBILIDADE — PDN</h1>
+      <p class="subtitle">Resumo dia + Acumulado Mês</p>
+    </header>
+
+    <!-- FILTROS -->
+    <section class="card" aria-label="Filtros">
+      <h2 class="section-title">FILTROS</h2>
+      <div class="filters">
+        <div class="field">
+          <label class="label" for="dtIni">Data inicial</label>
+          <input class="control" type="date" id="dtIni" />
+        </div>
+        <div class="field">
+          <label class="label" for="dtFim">Data final</label>
+          <input class="control" type="date" id="dtFim" />
+        </div>
+        <div class="field">
+          <label class="label" for="perIni">Período inicial</label>
+          <select class="control" id="perIni"></select>
+        </div>
+        <div class="field">
+          <label class="label" for="perFim">Período final</label>
+          <select class="control" id="perFim"></select>
+        </div>
+      </div>
+      <div class="actions" style="padding:0 12px 12px">
+        <button class="btn secondary" id="btnRecarregar">Recarregar</button>
+        <a href="index.html" class="link-btn">Voltar ao menu</a>
+      </div>
+    </section>
+
+    <!-- GRÁFICO POR PERÍODO -->
+    <section class="card chart-card" aria-label="Gráfico Por Período">
+      <h2 class="section-title">
+        GRÁFICO POR PERÍODO
+        <span class="totals">
+          <span class="badge media"><span class="dot"></span><span id="tMediaPeriodo07">Média 07t: —</span></span>
+          <span class="badge media"><span class="dot"></span><span id="tMediaPeriodo16">Média 16t: —</span></span>
+          <span class="badge pen"><span class="dot"></span><span id="tPenPeriodo">Penalidade: —</span></span>
+        </span>
+      </h2>
+      <div class="chart-wrap">
+        <div class="loading" id="loadingPeriodo">Carregando…</div>
+        <canvas id="graficoPeriodo"></canvas>
+      </div>
+    </section>
+
+    <!-- GRÁFICO POR DIA -->
+    <section class="card chart-card" aria-label="Gráfico Por Dia">
+      <h2 class="section-title">
+        GRÁFICO POR DIA
+        <span class="totals">
+          <span class="badge media"><span class="dot"></span><span id="tMediaDia07">Média 07t: —</span></span>
+          <span class="badge media"><span class="dot"></span><span id="tMediaDia16">Média 16t: —</span></span>
+          <span class="badge pen"><span class="dot"></span><span id="tPenDia">Penalidade: —</span></span>
+        </span>
+      </h2>
+      <div class="chart-wrap">
+        <div class="loading" id="loadingDia">Carregando…</div>
+        <canvas id="graficoDia"></canvas>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Chart.js + DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
+    const META_PDN = 3;
+
+    const PERIODOS = ["00-01h","01-02h","02-03h","03-04h","04-05h","05-06h","06-07h","07-08h","08-09h","09-10h","10-11h","11-12h","12-13h","13-14h","14-15h","15-16h","16-17h","17-18h","18-19h","19-20h","20-21h","21-22h","22-23h","23-00h"];
+
+    // ---------- UI helpers ----------
+    function setText(id, txt){ const el = document.getElementById(id); if (el) el.textContent = txt; }
+    function setLoading(on){
+      const btn = document.getElementById('btnRecarregar');
+      const lp  = document.getElementById('loadingPeriodo');
+      const ld  = document.getElementById('loadingDia');
+      if(on){ btn.disabled = true; btn.textContent = 'Carregando…'; lp.classList.add('show'); ld.classList.add('show'); }
+      else  { btn.disabled = false; btn.textContent = 'Recarregar';  lp.classList.remove('show'); ld.classList.remove('show'); }
+    }
+    function initPeriodos(){
+      const perIni = document.getElementById('perIni');
+      const perFim = document.getElementById('perFim');
+      perIni.add(new Option('— (todos) —',''));
+      perFim.add(new Option('— (todos) —',''));
+      PERIODOS.forEach(p=>{ perIni.add(new Option(p,p)); perFim.add(new Option(p,p)); });
+      perIni.value = ''; perFim.value = '';
+    }
+    function setDatasPadrao(){
+      const pad = n => String(n).padStart(2,'0');
+      const hoje = new Date();
+      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const elIni = document.getElementById('dtIni');
+      const elFim = document.getElementById('dtFim');
+      if (elIni && !elIni.value) elIni.value = toISO(hoje);
+      if (elFim && !elFim.value) elFim.value = toISO(hoje);
+    }
+    function mediaSemZeros(arr){ const v=(arr||[]).map(Number).filter(x=>!isNaN(x)&&x>0); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; }
+
+    // Totais
+    function setTotaisPeriodoPDN(m07,m16,pen){ setText('tMediaPeriodo07',`Média 07t: ${Math.round(+m07||0)}`); setText('tMediaPeriodo16',`Média 16t: ${Math.round(+m16||0)}`); setText('tPenPeriodo',`Penalidade: R$ ${Math.round(+pen||0)}`); }
+    function setTotaisDiaPDN(m07,m16,pen){ setText('tMediaDia07',`Média 07t: ${Math.round(+m07||0)}`); setText('tMediaDia16',`Média 16t: ${Math.round(+m16||0)}`); setText('tPenDia',`Penalidade: R$ ${Math.round(+pen||0)}`); }
+
+    // ---------- Fetch ----------
+    async function fetchPeriodoPDN(){
+      const dtIni = document.getElementById('dtIni').value;
+      const dtFim = document.getElementById('dtFim').value;
+      const perIni = document.getElementById('perIni').value;
+      const perFim = document.getElementById('perFim').value;
+
+      const params = new URLSearchParams({ action:'mediaDMResumoPDN_BarrasDuplas', dtIni, dtFim, periodoIni:perIni, periodoFim:perFim });
+      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`, { cache:'no-store' });
+      const json = await resp.json();
+      if(!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter dados (período PDN)');
+      return json; // {labels, s07, s16, penalties, meta}
+    }
+
+    // Torna o gráfico por dia opcional: se a rota não existir, não quebra
+    async function fetchDiaPDN(){
+      try{
+        const dtIni = document.getElementById('dtIni').value;
+        const dtFim = document.getElementById('dtFim').value;
+        const params = new URLSearchParams({ action:'resumoDiarioPDN_BarrasDuplas', dtIni, dtFim });
+        const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`, { cache:'no-store' });
+        const json = await resp.json();
+        if(!json.sucesso) throw new Error(json.mensagem || 'Falha (dia PDN)');
+        return json; // {days, d07, d16, pen}
+      }catch(err){
+        console.warn('Resumo diário PDN indisponível:', err.message || err);
+        return null; // não bloqueia a página
+      }
+    }
+
+    // ---------- Chart helpers ----------
+    function ajustarLarguraCanvas(canvasId, labels, minWDesktop=760, minWMobile=960){
+      const canvas = document.getElementById(canvasId);
+      const wrap   = canvas.parentElement;
+      const isMobile    = window.innerWidth <= 640;
+      const pxPorRotulo = isMobile ? 48 : 38;
+      const minW        = isMobile ? minWMobile : minWDesktop;
+      const w = Math.max(minW, labels.length * pxPorRotulo);
+      const h = Math.max(isMobile ? 380 : 460, wrap ? wrap.clientHeight : 0);
+      canvas.width  = w; canvas.height = h;
+      canvas.style.width  = w + 'px'; canvas.style.height = h + 'px';
+    }
+
+    Chart.register(ChartDataLabels);
+
+    // ---------- Desenhar — PERÍODO ----------
+    function desenharGraficoPeriodoPDN(labels, s07, s16, penalties, metaArr){
+      const isMobile = window.matchMedia('(max-width: 480px)').matches;
+      ajustarLarguraCanvas('graficoPeriodo', labels);
+
+      const ctx = document.getElementById('graficoPeriodo').getContext('2d');
+      if (window._chartPeriodoPDN) window._chartPeriodoPDN.destroy();
+
+      const cor07 = '#3db7ac';
+      const cor16 = '#0b4c59';
+
+      const vmax = Math.max(Math.ceil(Math.max(...s07, ...s16, META_PDN) + 1), META_PDN + 2);
+
+      window._chartPeriodoPDN = new Chart(ctx, {
+        data: {
+          labels,
+          datasets: [
+            { type:'bar', label:'Média 07t', yAxisID:'y', data:s07, backgroundColor:cor07, borderColor:cor07, borderWidth:1, maxBarThickness:isMobile?22:28,
+              datalabels:{ display:true, color:'#083735', anchor:'center', align:'center', formatter:v=>Math.round(v), font:{weight:800, size:isMobile?9:12} } },
+            { type:'bar', label:'Média 16t', yAxisID:'y', data:s16, backgroundColor:cor16, borderColor:cor16, borderWidth:1, maxBarThickness:isMobile?22:28,
+              datalabels:{ display:true, color:'#fff', anchor:'center', align:'center', formatter:v=>Math.round(v), font:{weight:800, size:isMobile?9:12} } },
+            { type:'line', label:`Meta ${META_PDN}`, yAxisID:'y', data:metaArr, borderColor:'red', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false, datalabels:{display:false} },
+            { type:'line', label:'Penalidades (Σ)', yAxisID:'y1', data:penalties, borderColor:'#183153', backgroundColor:'#183153', borderWidth:2, tension:0.25, pointRadius:2, pointHoverRadius:4,
+              datalabels:{ display:true, color:'#183153', anchor:'end', align:'top', rotation:-90, offset:2, formatter:v=>`R$ ${Math.round(v)}`, font:{weight:800, size:isMobile?8:11} } }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins: {
+            legend:{ display:true, position:'top', labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, font:{size:isMobile?11:14} } },
+            tooltip:{ callbacks:{
+              label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}` : (c.dataset.type==='line' ? c.dataset.label : ` ${c.dataset.label}: ${c.parsed.y}`)
+            }}
+          },
+          scales: {
+            x:{ ticks:{ autoSkip:false, maxRotation:isMobile?90:45, minRotation:isMobile?90:45, font:{size:isMobile?8:11} }, grid:{ display:false } },
+            y:{ beginAtZero:true, min:0, max:Math.max(10, vmax), display:false, title:{display:true, text:'Média'}, ticks:{precision:0} },
+            y1:{ position:'right', display:false,min:-120000 , max: 75000 ,grid:{drawOnChartArea:false}, ticks:{precision:0}}
+          },
+          layout:{ padding:{ top:6, right:10, bottom:isMobile?64:52, left:6 } }
+        }
+      });
+    }
+
+    // ---------- Desenhar — DIA ----------
+    function desenharGraficoDiaPDN(labelsDias, d07, d16, penalDia){
+      const isMobile = window.matchMedia('(max-width: 480px)').matches;
+      ajustarLarguraCanvas('graficoDia', labelsDias, 800, 960);
+
+      const ctx = document.getElementById('graficoDia').getContext('2d');
+      if (window._chartDiaPDN) window._chartDiaPDN.destroy();
+
+      const cor07 = '#3db7ac';
+      const cor16 = '#0b4c59';
+
+      const vmax = Math.max(Math.ceil(Math.max(...d07, ...d16, META_PDN) + 1), META_PDN + 2);
+
+      window._chartDiaPDN = new Chart(ctx, {
+        data: {
+          labels: labelsDias,
+          datasets: [
+            { type:'bar', label:'Média 07t', yAxisID:'y', data:d07, backgroundColor:cor07, borderColor:cor07, borderWidth:1, maxBarThickness:isMobile?22:28,
+              datalabels:{ display:true, color:'#083735', anchor:'center', align:'center', formatter:v=>Math.round(v), font:{weight:800, size:isMobile?8:11} } },
+            { type:'bar', label:'Média 16t', yAxisID:'y', data:d16, backgroundColor:cor16, borderColor:cor16, borderWidth:1, maxBarThickness:isMobile?22:28,
+              datalabels:{ display:true, color:'#fff', anchor:'center', align:'center', formatter:v=>Math.round(v), font:{weight:800, size:isMobile?9:12} } },
+            { type:'line', label:`Meta ${META_PDN}`, yAxisID:'y', data:new Array(labelsDias.length).fill(META_PDN), borderColor:'red', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false, datalabels:{display:false} },
+            { type:'line', label:'Penalidades (Σ)', yAxisID:'y1', data:penalDia, borderColor:'#183153', backgroundColor:'#183153', borderWidth:2, tension:0.25, pointRadius:2, pointHoverRadius:4,
+              datalabels:{ display:true, color:'#183153', anchor:'end', align:'top', rotation:-90, offset:2, formatter:v=>`R$ ${Math.round(v)}`, font:{weight:800, size:isMobile?8:11} } }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:true, position:'top', labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, font:{size:isMobile?11:14} } },
+            tooltip:{ callbacks:{ label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}` : (c.dataset.type==='line' ? c.dataset.label : ` ${c.dataset.label}: ${c.parsed.y}`) } }
+          },
+          scales:{
+            x:{ ticks:{ autoSkip:false, maxRotation:isMobile?60:0, minRotation:isMobile?60:0, font:{size:isMobile?9:11} }, grid:{display:false} },
+            y:{ beginAtZero:true, min:0, max:Math.max(10, vmax), display:false, title:{display:true, text:'Média'}, ticks:{precision:0} },
+            y1:{ position:'right', display:false,min:-120000 , max: 75000 ,grid:{drawOnChartArea:false}, ticks:{precision:0} }
+          },
+          layout:{ padding:{ top:6, right:10, bottom:isMobile?64:44, left:6 } }
+        }
+      });
+    }
+
+    // ---------- Carregar ----------
+    async function carregar(){
+      setLoading(true);
+      try{
+        const dtIni = document.getElementById('dtIni').value;
+        const dtFim = document.getElementById('dtFim').value;
+        const perIni = document.getElementById('perIni').value;
+        const perFim = document.getElementById('perFim').value;
+
+        const results = await Promise.allSettled([ fetchPeriodoPDN(), fetchDiaPDN() ]);
+
+        // PERÍODO (obrigatório)
+        if (results[0].status === 'fulfilled') {
+          const p = results[0].value;
+          let labelsP = (p.labels || []).slice();
+          let s07 = (p.s07 || []).map(v=>+v||0);
+          let s16 = (p.s16 || []).map(v=>+v||0);
+          let pensP = (p.penalties || []).map(v=>+v||0);
+          const meta = (p.meta && p.meta.length ? p.meta : new Array(labelsP.length).fill(META_PDN));
+
+          if (!labelsP.includes('Média Dia')) {
+            labelsP.push('Média Dia');
+            s07.push(+mediaSemZeros(s07).toFixed(2));
+            s16.push(+mediaSemZeros(s16).toFixed(2));
+            pensP.push(pensP.reduce((a,b)=>a+b,0));
+          }
+          desenharGraficoPeriodoPDN(labelsP, s07, s16, pensP, meta);
+          setTotaisPeriodoPDN(s07.at(-1), s16.at(-1), pensP.at(-1));
+        } else {
+          throw results[0].reason || new Error('Falha ao carregar gráfico por período');
+        }
+
+        // DIA (opcional)
+        if (results[1].status === 'fulfilled' && results[1].value) {
+          const d = results[1].value;
+          let diasISO = d.days || [];
+          let d07 = (d.d07 || []).map(v=>+v||0);
+          let d16 = (d.d16 || []).map(v=>+v||0);
+          let penD = (d.pen || []).map(v=>+v||0);
+
+          const diasBr = diasISO.map(s=>{ const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}` : s; });
+
+          if (diasBr.length && (diasBr.at(-1) === 'Média Dias' || diasBr.at(-1) === 'Média')) {
+            diasBr[diasBr.length-1] = 'Média';
+          } else if (diasBr.length){
+            diasBr.push('Média');
+            d07.push(+mediaSemZeros(d07).toFixed(2));
+            d16.push(+mediaSemZeros(d16).toFixed(2));
+            penD.push(penD.reduce((a,b)=>a+b,0));
+          }
+
+          desenharGraficoDiaPDN(diasBr, d07, d16, penD);
+          setTotaisDiaPDN(d07.at(-1), d16.at(-1), penD.at(-1));
+        } else {
+          console.warn('Gráfico por dia ficou oculto (rota PDN não disponível).');
+          document.getElementById('loadingDia').classList.remove('show');
+        }
+
+      }catch(err){
+        console.error(err);
+        alert(err.message || 'Não foi possível carregar os dados.');
+      }finally{
+        setLoading(false);
+      }
+    }
+
+    document.getElementById('btnRecarregar').addEventListener('click', carregar);
+
+    // init
+    (function init(){
+      initPeriodos();
+      setDatasPadrao();
+      carregar();
+    })();
+  </script>
+</body>
+</html>
