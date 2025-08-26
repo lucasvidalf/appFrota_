@@ -99,7 +99,6 @@
   }
   @keyframes spin { to{ transform: rotate(360deg) } }
 
-  /* rodapé opcional */
   .foot{
     text-align:center; opacity:.7; font-weight:700; font-size:12px; padding:12px 0 2px;
   }
@@ -116,13 +115,13 @@
       <div class="form-wrap">
         <div class="field">
           <label class="label" for="usuario">Usuário / E-mail</label>
-          <input class="control" id="usuario" type="email" placeholder="ex.: nome@empresa.com" />
+          <input class="control" id="usuario" type="email" placeholder="ex.: nome@empresa.com" autocomplete="username" />
         </div>
 
         <div class="field">
           <label class="label" for="senha">Senha</label>
           <div class="input-row">
-            <input class="control" id="senha" type="password" placeholder="••••••••" />
+            <input class="control" id="senha" type="password" placeholder="••••••••" autocomplete="current-password" />
             <button class="showpass" id="btnShowPass" type="button" aria-pressed="false">Mostrar</button>
           </div>
           <div class="meta-row">
@@ -155,12 +154,32 @@
     // ====== CONFIG ======
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
     const REDIRECT_OK = './telaPrincipal.html'; // para onde vai após login
+    const SESSION_KEY = 'usuarioLogado'; // sessão persistente
+
+    // ====== Session helpers ======
+    function getSessao() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (s && s.issuedAt && s.ttlHours) {
+          const expiraEm = s.issuedAt + s.ttlHours * 3600 * 1000;
+          if (Date.now() > expiraEm) {
+            localStorage.removeItem(SESSION_KEY);
+            return null;
+          }
+        }
+        return s;
+      } catch { return null; }
+    }
+    function setSessao(sessao) { localStorage.setItem(SESSION_KEY, JSON.stringify(sessao || {})); }
+    function clearSessao()      { localStorage.removeItem(SESSION_KEY); }
 
     // ====== UI helpers ======
     const $ = (sel) => document.querySelector(sel);
     function setBusy(on, msg='Processando…'){
-      const el = $('#busy');
       $('#busyMsg').textContent = msg || 'Processando…';
+      const el = $('#busy');
       el.classList.toggle('show', !!on);
       el.setAttribute('aria-busy', on ? 'true' : 'false');
     }
@@ -174,6 +193,14 @@
       m.textContent = text || '';
       m.className = 'msg ' + (type === 'ok' ? 'ok' : 'err');
     }
+
+    // ====== Auto redirect se já estiver logado ======
+    (function autoSkipIfLogged(){
+      const s = getSessao();
+      if (s?.sucesso) {
+        location.replace(REDIRECT_OK);
+      }
+    })();
 
     // ====== Lembrar usuário (UX) ======
     (function bootRemember(){
@@ -197,12 +224,11 @@
       showMsg('Fale com o administrador para redefinir a senha.', 'err');
     });
 
-    // ====== Chamada ao Apps Script (stub) ======
-    async function apiLogin(usuario, senha){
-      // payload compatível com seus outros POSTs: dados=<json>
+    // ====== Chamada ao Apps Script ======
+    async function apiLogin(login, senha){
       const body = 'dados=' + encodeURIComponent(JSON.stringify({
-        action: 'login',  // implemente essa rota no GAS se ainda não existir
-        dados: { usuario, senha }
+        action: 'login',
+        dados: { login, senha }
       }));
 
       const resp = await fetch(SCRIPT_URL, {
@@ -211,27 +237,19 @@
         body
       });
 
-      let json;
-      try { json = await resp.json(); } catch(e){ json = null; }
-
-      // Caso ainda não exista a rota no GAS, trate aqui
+      const json = await resp.json();
       if (!json || json.sucesso !== true) {
-        // REMOVA este bloco de fallback quando o backend estiver pronto
-        if (usuario === 'demo@empresa.com' && senha === 'demo') {
-          return { sucesso:true, token:'demo-token' };
-        }
-        const msg = (json && json.mensagem) ? json.mensagem : 'Falha ao autenticar.';
-        throw new Error(msg);
+        throw new Error((json && json.mensagem) || 'Falha ao autenticar.');
       }
-      return json; // { sucesso:true, token, nome?, ... }
+      return json; // { sucesso, usuario, acesso, local, permissoes, issuedAt, ttlHours }
     }
 
     // ====== Submit ======
     $('#btnEntrar').addEventListener('click', async (ev)=>{
-      const usuario = $('#usuario').value.trim();
-      const senha   = $('#senha').value;
+      const login = $('#usuario').value.trim().toLowerCase();
+      const senha = $('#senha').value;
 
-      if (!usuario || !senha){
+      if (!login || !senha){
         showMsg('Preencha usuário e senha.');
         return;
       }
@@ -241,19 +259,19 @@
         showMsg('');
         setBtnLoading(btn, true, 'Entrando…'); setBusy(true, 'Autenticando…');
 
-        const r = await apiLogin(usuario, senha);
+        const session = await apiLogin(login, senha);
 
+        // Lembrar apenas o usuário (UX)
         if ($('#remember').checked){
-          localStorage.setItem('appfrota_login_user', usuario);
+          localStorage.setItem('appfrota_login_user', login);
         } else {
           localStorage.removeItem('appfrota_login_user');
         }
 
-        // guarda um “token” simples (ajuste conforme seu backend)
-        if (r.token) localStorage.setItem('appfrota_token', r.token);
+        // Salvar sessão completa p/ controle de acesso nas demais páginas
+        setSessao(session);
 
         showMsg('Login efetuado!', 'ok');
-        // redireciona
         location.assign(REDIRECT_OK);
 
       }catch(err){
