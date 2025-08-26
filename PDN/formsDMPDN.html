@@ -60,6 +60,12 @@
     }
     .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
 
+    /* grid para a área DATA/PERÍODO */
+    .info-grid{
+      display:grid; gap:12px; grid-template-columns:1fr 1fr;
+    }
+    @media (max-width:520px){ .info-grid{ grid-template-columns:1fr } }
+
     /* Pills (gerenciar frota) */
     .pill-wrap{
       display:flex; flex-wrap:wrap; gap:8px;
@@ -78,6 +84,7 @@
     .inline-add{ display:flex; gap:8px; align-items:center; margin-top:10px; }
     .inline-add input{ flex:1 }
     .inline-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px }
+
     .btn{
       border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
       background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18);
@@ -96,6 +103,7 @@
       align-items:start;
     }
     @media (max-width:520px){ .emp-grid{ grid-template-columns: 1fr } }
+
     .check-pill{
       display:flex; align-items:center; gap:10px;
       padding:12px 14px; background:#f9fbfb; border:1px solid #cfd8dc;
@@ -146,8 +154,8 @@
 <body>
   <main class="app">
     <header class="card-header">
-      <h1 class="title">ATUALIZAÇÃO DISPONIBILIDADE — PDN</h1>
-      <p class="subtitle">Empilhadeiras 07t e 16t</p>
+      <h1 class="title">ATUALIZAÇÃO DISPONIBILIDADE</h1>
+      <p class="subtitle">Intermodal Pederneiras</p>
     </header>
 
     <!-- DATA + PERÍODO -->
@@ -177,9 +185,12 @@
 
     <!-- GERENCIAR FROTAS -->
     <section id="secGerenciar" class="card" aria-label="Gerenciar Frotas PDN">
+      <!-- 07t -->
       <h2 class="section-title">
-        <span>LISTAS DE EMPILHADEIRAS (PDN)</span>
-        <small class="muted"><span id="totalPlacas7">0</span> placas 07t • <span id="totalPlacas16">0</span> placas 16t • <span id="infoAtualizacao">—</span></small>
+        <span>LISTA DE EMPILHADEIRAS 07 t</span>
+        <small class="muted">
+          <span id="totalPlacas7">0</span> placas • Atualizado: <span id="infoAtualizacao">—</span>
+        </small>
       </h2>
       <div class="section-body">
         <h3 style="margin:8px 2px 6px">Frota 07 toneladas</h3>
@@ -188,8 +199,15 @@
           <input id="novoCodigo7" class="control" placeholder="Adicionar código 07t (ex.: EMP0701)" />
           <button class="btn ghost" id="btnAdicionar7">Adicionar</button>
         </div>
+      </div><!-- FECHA section-body 07t ✅ -->
 
-        <h3 style="margin:16px 2px 6px">Frota 16 toneladas</h3>
+      <!-- 16t -->
+      <h2 class="section-title">
+        <span>LISTA DE EMPILHADEIRAS 16 t</span>
+        <small class="muted"><span id="totalPlacas16">0</span> placas</small>
+      </h2>
+      <div class="section-body">
+        <h3 style="margin:8px 2px 6px">Frota 16 toneladas</h3>
         <div id="pillContainer16" class="pill-wrap" aria-live="polite"></div>
         <div class="inline-add">
           <input id="novoCodigo16" class="control" placeholder="Adicionar código 16t (ex.: EMP1601)" />
@@ -206,22 +224,22 @@
     <!-- CLASSIFICAÇÕES (4 grupos) -->
     <section id="secClassificacao" class="card hidden" aria-label="Classificação">
       <h2 class="section-title">
-        <span>EMPILHADEIRAS 07t DISPONÍVEIS</span><small id="countDisp7">0</small>
+        <span>EMPILHADEIRAS 07 t DISPONÍVEIS</span><small id="countDisp7">0</small>
       </h2>
       <div class="section-body"><div id="gridDisp7" class="emp-grid"></div></div>
 
       <h2 class="section-title">
-        <span>EMPILHADEIRAS 07t EM MANUTENÇÃO</span><small id="countMan7">0</small>
+        <span>EMPILHADEIRAS 07 t EM MANUTENÇÃO</span><small id="countMan7">0</small>
       </h2>
       <div class="section-body"><div id="gridMan7" class="emp-grid"></div></div>
 
       <h2 class="section-title">
-        <span>EMPILHADEIRAS 16t DISPONÍVEIS</span><small id="countDisp16">0</small>
+        <span>EMPILHADEIRAS 16 t DISPONÍVEIS</span><small id="countDisp16">0</small>
       </h2>
       <div class="section-body"><div id="gridDisp16" class="emp-grid"></div></div>
 
       <h2 class="section-title">
-        <span>EMPILHADEIRAS 16t EM MANUTENÇÃO</span><small id="countMan16">0</small>
+        <span>EMPILHADEIRAS 16 t EM MANUTENÇÃO</span><small id="countMan16">0</small>
       </h2>
       <div class="section-body"><div id="gridMan16" class="emp-grid"></div></div>
 
@@ -294,10 +312,15 @@
       }catch(e){ return String(ts); }
     }
 
-    const setInfoAtualizacao = (str) => document.getElementById('infoAtualizacao').textContent = str || '—';
+    const setInfoAtualizacao = (str) => {
+      const el = document.getElementById('infoAtualizacao');
+      if (el) el.textContent = str || '—';
+    };
     const setTotals = () => {
-      document.getElementById('totalPlacas7').textContent  = FROTA7.length;
-      document.getElementById('totalPlacas16').textContent = FROTA16.length;
+      const t7   = document.getElementById('totalPlacas7');
+      const t16  = document.getElementById('totalPlacas16');
+      if (t7)  t7.textContent  = FROTA7.length;
+      if (t16) t16.textContent = FROTA16.length;
     };
 
     function showModal(msg, onOk, opts = {}) {
@@ -345,7 +368,6 @@
       lbl.innerHTML = `<input type="checkbox" id="${id}" /><span>${code}</span>`;
       const input = lbl.querySelector('input');
 
-      // seta estado
       if (grupo === 'disp7')  input.checked = DISP7.has(code);
       if (grupo === 'man7')   input.checked = MAN7.has(code);
       if (grupo === 'disp16') input.checked = DISP16.has(code);
@@ -363,22 +385,18 @@
     }
 
     function drawGrids(){
-      // containers
-      const gD7 = document.getElementById('gridDisp7');
-      const gM7 = document.getElementById('gridMan7');
-      const gD16= document.getElementById('gridDisp16');
-      const gM16= document.getElementById('gridMan16');
+      const gD7  = document.getElementById('gridDisp7');
+      const gM7  = document.getElementById('gridMan7');
+      const gD16 = document.getElementById('gridDisp16');
+      const gM16 = document.getElementById('gridMan16');
       gD7.innerHTML = gM7.innerHTML = gD16.innerHTML = gM16.innerHTML = '';
 
-      // 07t: mostra em apenas um grupo (exclusivo)
       sortPlacas(FROTA7.filter(c => !MAN7.has(c))).forEach(c => gD7.appendChild(makeCheck(c,'disp7')));
       sortPlacas(FROTA7.filter(c => !DISP7.has(c))).forEach(c => gM7.appendChild(makeCheck(c,'man7')));
 
-      // 16t
       sortPlacas(FROTA16.filter(c => !MAN16.has(c))).forEach(c => gD16.appendChild(makeCheck(c,'disp16')));
       sortPlacas(FROTA16.filter(c => !DISP16.has(c))).forEach(c => gM16.appendChild(makeCheck(c,'man16')));
 
-      // contadores
       document.getElementById('countDisp7').textContent  = DISP7.size;
       document.getElementById('countMan7').textContent   = MAN7.size;
       document.getElementById('countDisp16').textContent = DISP16.size;
@@ -452,7 +470,6 @@
     }
 
     /************ HANDLERS ************/
-    // adicionar código manualmente (07t / 16t)
     document.getElementById('btnAdicionar7').addEventListener('click', ()=>{
       const raw = document.getElementById('novoCodigo7').value;
       const code = slug(raw);
@@ -462,6 +479,7 @@
       document.getElementById('novoCodigo7').value = '';
       drawAll();
     });
+
     document.getElementById('btnAdicionar16').addEventListener('click', ()=>{
       const raw = document.getElementById('novoCodigo16').value;
       const code = slug(raw);
@@ -537,7 +555,6 @@
 
         await apiRegistrarSelecaoPDN(payload);
 
-        // limpa e mantém na etapa de classificação
         DISP7.clear(); MAN7.clear(); DISP16.clear(); MAN16.clear();
         drawGrids();
 
@@ -560,8 +577,8 @@
         setInfoAtualizacao(data.atualizadoEm || '—');
       }catch(err){
         console.warn('Sem listas no servidor; usando fallback de exemplo.');
-        FROTA7  = ['EMP0007','EMP0008','EMP0009'];  // <— apenas fallback visual
-        FROTA16 = ['EMP0201','EMP0202'];           // <— apenas fallback visual
+        FROTA7  = ['EMP0007','EMP0008','EMP0009'];  // fallback visual
+        FROTA16 = ['EMP0201','EMP0202'];           // fallback visual
         setInfoAtualizacao('lista local (fallback)');
       }finally{
         setBusy(false);
@@ -569,7 +586,6 @@
       drawAll();
       document.getElementById('secClassificacao').classList.add('hidden');
 
-      // data de hoje
       const d = new Date();
       const hoje = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       const el = document.getElementById('dtRegistro');
