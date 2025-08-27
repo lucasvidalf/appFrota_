@@ -55,8 +55,11 @@
   .control:focus{ border-color:var(--brand-mid); box-shadow:0 0 0 3px rgba(61,183,172,.25); background:#fff }
   input[type="date"].control{ appearance:none;-webkit-appearance:none;-moz-appearance:none }
 
+  /* Ajuste para caber 100% no mobile — sem estourar a tela */
   @media (max-width:640px){
-    .filters{ grid-template-columns: 1fr 1fr; }
+    .chart-wrap canvas{
+      min-width: 100% !important; /* ignora os 560px no mobile */
+    }
   }
   @media (max-width:480px){
     .filters{ grid-template-columns: 1fr; }
