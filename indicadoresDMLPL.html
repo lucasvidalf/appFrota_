@@ -476,7 +476,7 @@ function desenharGraficoPeriodo(
         }
       },
       scales:{
-        x:{ ticks:{autoSkip:false, maxRotation:90, minRotation:90, font:{size:isMobile?8:11}}, grid:{display:false} },
+        x:{ ticks:{autoSkip:false, maxRotation:90, minRotation:90, font:{weight:800, size:isMobile?8:11}}, grid:{display:false} },
         y:{ beginAtZero:true, display:false, min:0, max:20, suggestedMax:maxBar, ticks:{precision:0} },
         y1:{ position:'right', display:false, min:-190000, max:70000, grid:{drawOnChartArea:false}, ticks:{precision:0} }
       },
@@ -571,7 +571,7 @@ function desenharGraficoDia(labelsDias, mediasDia, penalDia, highlights = [], ro
                 labels:{usePointStyle:true,pointStyle:'rectRounded',boxWidth:10,boxHeight:10,font:{size:isMobile?11:14}}},
                 tooltip:{callbacks:{label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}`
                                                : c.dataset.type==='line' ? `${c.dataset.label}` : ` Média: ${c.parsed.y}`}} },
-      scales:{ x:{ticks:{autoSkip:false,maxRotation:rotX90?90:0,minRotation:rotX90?90:0,font:{size:isMobile?8:11}},grid:{display:false}},
+      scales:{ x:{ticks:{autoSkip:false,maxRotation:rotX90?90:0,minRotation:rotX90?90:0,font:{weight:800, size:isMobile?8:11}},grid:{display:false}},
                y:{beginAtZero:true,display:false,min:0,max:20,ticks:{precision:0}},
                y1:{position:'right',display:false,min:-190000,max:70000,grid:{drawOnChartArea:false}} },
       layout:{padding:{top:6,right:10,bottom:isMobile?64:44,left:6}}
@@ -692,7 +692,7 @@ function renderDia(){
   let penN = pens.slice(start);
 
   if (rotN.length <= 1){
-    desenharGraficoDia(rotN, medN, penN, [], /*rot90*/ false);
+    desenharGraficoDia(rotN, medN, penN, [], true, true);
     setTotaisDia(mediaSemZeros(medN), soma(penN), rotN.length, mediaAcumulada);
     navJanelaDias.style.display = 'none';
     return;
@@ -704,7 +704,7 @@ function renderDia(){
   medN.push(mN);
   penN.push(pN);
 
-  desenharGraficoDia(rotN, medN, penN, [rotN.length - 1], /*rot90*/ false);
+  desenharGraficoDia(rotN, medN, penN, [], true, true);
   setTotaisDia(mN, pN, rotN.length - 1, mediaAcumulada);
   navJanelaDias.style.display = 'none';
 }
