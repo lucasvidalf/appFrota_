@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -41,8 +40,8 @@
     margin:12px; background:#3db7ac; color:#0b1f1e;
     font-weight:800; letter-spacing:.4px;
     padding:10px 14px; border-radius: var(--br-md);
-    display:flex; align-items:center;
-    font-size: clamp(12px, 2.1vw, 14px); /* títulos menores */
+    display:flex; align-items:center; gap:10px;
+    font-size: clamp(12px, 2.1vw, 14px);
   }
 
   .filters{ display:grid; gap:10px 12px; grid-template-columns: 1fr 1fr 1fr 1fr; padding:0 12px 6px; }
@@ -64,6 +63,8 @@
   }
 
   .chart-card{ padding: 0 12px 12px; }
+  .chart-head{ display:flex; align-items:center; gap:10px; margin:0 12px 8px; }
+  .chart-head .grow{ flex:1 }
   .chart-wrap{
     position: relative; width: 100%;
     height: clamp(360px, 40vh, 520px);
@@ -73,7 +74,6 @@
   }
   .chart-wrap canvas{ min-width: 560px; display:block; }
 
-  /* overlay de loading dentro do .chart-wrap */
   .loading {
     position:absolute; inset:0; display:none; align-items:center; justify-content:center;
     background:rgba(255,255,255,.6); backdrop-filter:saturate(1.2) blur(1px); z-index:2;
@@ -86,8 +86,7 @@
   }
   @keyframes spin{ to{ transform:rotate(360deg) } }
 
-  /* badges de total no título */
-  .totals{ display:inline-flex; gap:8px; margin-left:auto; vertical-align:middle; }
+  .totals{ display:inline-flex; gap:8px; margin-left:auto; vertical-align:middle; flex-wrap:wrap }
   .badge{
     display:inline-flex; gap:6px; align-items:center; padding:4px 8px; border-radius:999px;
     background:#e9fbf8; color:#0b4c59; font-weight:800; font-size:12px;
@@ -112,6 +111,10 @@
     border-radius:12px; padding:12px 14px; font-weight:800; background:var(--brand-dark); color:#fff;
     box-shadow:0 6px 14px rgba(1,61,53,.18);
   }
+
+  .nav-janela{ display:flex; align-items:center; gap:8px; font-weight:800 }
+  .nav-janela button{ border:1px solid #cfd8dc; background:#eef6f5; color:#063a36; border-radius:10px; padding:6px 10px; cursor:pointer; }
+  .small{ font-size:12px; opacity:.85; font-weight:800 }
 </style>
 </head>
 <body>
@@ -154,9 +157,19 @@
         GRÁFICO POR PERÍODO
         <span class="totals">
           <span class="badge media"><span class="dot"></span><span id="tMediaPeriodo">Média: —</span></span>
-          <span class="badge pen"><span class="dot"></span><span id="tPenPeriodo">Penalidade - R$: —</span></span>
+          <span class="badge pen"><span class="dot"></span><span id="tPenPeriodo">Penalidade: R$ —</span></span>
         </span>
       </h2>
+
+      <div class="chart-head">
+        <div class="nav-janela">
+          <button id="btnPrevJan">◀︎</button>
+          <select id="selJanela" class="control" style="max-width:200px;padding:6px 10px;min-height:36px"></select>
+          <button id="btnNextJan">▶︎</button>
+        </div>
+        <div class="grow"></div>
+      </div>
+
       <div class="chart-wrap">
         <div class="loading" id="loadingPeriodo">Carregando…</div>
         <canvas id="graficoPeriodo"></canvas>
@@ -169,9 +182,32 @@
         GRÁFICO POR DIA
         <span class="totals">
           <span class="badge media"><span class="dot"></span><span id="tMediaDia">Média: —</span></span>
-          <span class="badge pen"><span class="dot"></span><span id="tPenDia">Penalidade - R$: —</span></span>
+          <span class="badge media"><span class="dot"></span><span id="tMediaAcum">Média acumulada: —</span></span>
+          <span class="badge pen"><span class="dot"></span><span id="tPenDia">Penalidade: R$ —</span></span>
         </span>
       </h2>
+
+      <div class="chart-head">
+        <div class="nav-janela">
+          <button id="btnPrevDiaOpt">◀︎</button>
+          <select id="visaoDia" class="control" style="max-width:220px">
+            <option value="1">Dia</option>
+            <option value="5">Últimos 5 dias</option>
+            <option value="15">Últimos 15 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="all">Visão geral (todos)</option>
+          </select>
+          <button id="btnNextDiaOpt">▶︎</button>
+        </div>
+        <div class="grow"></div>
+        <!-- setas para "passear" dentro do período nas visões 30/all -->
+        <div class="nav-janela" id="navJanelaDias" style="display:none">
+          <button id="btnPrevDiaWin">◀︎</button>
+          <span class="small" id="txtJanelaDias"></span>
+          <button id="btnNextDiaWin">▶︎</button>
+        </div>
+      </div>
+
       <div class="chart-wrap">
         <div class="loading" id="loadingDia">Carregando…</div>
         <canvas id="graficoDia"></canvas>
@@ -180,472 +216,579 @@
 
   </main>
 
-  <!-- Chart.js + DataLabels -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
-  <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
-    const META = 12;
+<script>
+/* =========================
+   CONFIG / CONSTANTES
+========================= */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxe-_Yhj17NX0ze5GWo2v_W7llQD88gWIDKofhVNUrS8ShK82Hhs3nXHOwRr6nPGbknOg/exec';
+const META = 12;
+const WINDOW_DIAS = 12; // nº de labels visíveis no "passeio"
 
-    const PERIODOS = [
-      "00-01h","01-02h","02-03h","03-04h","04-05h","05-06h",
-      "06-07h","07-08h","08-09h","09-10h","10-11h","11-12h",
-      "12-13h","13-14h","14-15h","15-16h","16-17h","17-18h",
-      "18-19h","19-20h","20-21h","21-22h","22-23h","23-00h"
-    ];
+// Períodos de 1h (24) + janelas de 6h + "todos"
+const PERIODOS = [
+  "00-01h","01-02h","02-03h","03-04h","04-05h","05-06h",
+  "06-07h","07-08h","08-09h","09-10h","10-11h","11-12h",
+  "12-13h","13-14h","14-15h","15-16h","16-17h","17-18h",
+  "18-19h","19-20h","20-21h","21-22h","22-23h","23-00h"
+];
+const JANELAS = [
+  {id:'j0', ini:0,  fim:6,  label:'00–06h'},
+  {id:'j1', ini:6,  fim:12, label:'06–12h'},
+  {id:'j2', ini:12, fim:18, label:'12–18h'},
+  {id:'j3', ini:18, fim:24, label:'18–00h'},
+  {id:'all', all:true, label:'Todos os períodos (24)'}
+];
+let idxJanela = 0;      // janela atual do gráfico por período
+let _diaPageStart = 0;  // início da janela visível (pager) no gráfico por dia
 
-    function initPeriodos(){
-      const perIni = document.getElementById('perIni');
-      const perFim = document.getElementById('perFim');
-      perIni.add(new Option('— (todos) —',''));
-      perFim.add(new Option('— (todos) —',''));
-      PERIODOS.forEach(p=>{
-        perIni.add(new Option(p,p));
-        perFim.add(new Option(p,p));
-      });
-      perIni.value = '';
-      perFim.value = '';
+// ====== Refs DOM ======
+const dtIni = document.getElementById('dtIni');
+const dtFim = document.getElementById('dtFim');
+const perIni = document.getElementById('perIni');
+const perFim = document.getElementById('perFim');
+
+const btnRecarregar   = document.getElementById('btnRecarregar');
+const loadingPeriodo  = document.getElementById('loadingPeriodo');
+const loadingDia      = document.getElementById('loadingDia');
+
+const graficoPeriodo  = document.getElementById('graficoPeriodo');
+const graficoDia      = document.getElementById('graficoDia');
+
+const selJanela       = document.getElementById('selJanela');
+const btnPrevJan      = document.getElementById('btnPrevJan');
+const btnNextJan      = document.getElementById('btnNextJan');
+
+const visaoDia        = document.getElementById('visaoDia');
+const btnPrevDiaOpt   = document.getElementById('btnPrevDiaOpt');
+const btnNextDiaOpt   = document.getElementById('btnNextDiaOpt');
+const btnPrevDiaWin   = document.getElementById('btnPrevDiaWin');
+const btnNextDiaWin   = document.getElementById('btnNextDiaWin');
+const navJanelaDias   = document.getElementById('navJanelaDias');
+const txtJanelaDias   = document.getElementById('txtJanelaDias');
+
+const tMediaPeriodo   = document.getElementById('tMediaPeriodo');
+const tPenPeriodo     = document.getElementById('tPenPeriodo');
+
+// cache
+let _cachePeriodo = null;
+let _cacheDia = null;
+
+/* =========================
+   HELPERS GERAIS
+========================= */
+function setDatasPadrao(){
+  const pad = n => String(n).padStart(2,'0');
+  const hoje = new Date();
+  const ini = new Date(); // mesmo dia por padrão (ajuste se quiser -7, etc.)
+  const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if (!dtIni.value) dtIni.value = toISO(ini);
+  if (!dtFim.value) dtFim.value = toISO(hoje);
+}
+
+function initPeriodos(){
+  perIni.innerHTML = '';
+  perFim.innerHTML = '';
+  perIni.add(new Option('— (todos) —',''));
+  perFim.add(new Option('— (todos) —',''));
+  PERIODOS.forEach(p=>{ perIni.add(new Option(p,p)); perFim.add(new Option(p,p)); });
+  perIni.value = ''; perFim.value = '';
+}
+
+function initSelecaoJanela(){
+  selJanela.innerHTML = '';
+  JANELAS.forEach(j => selJanela.add(new Option(j.label, j.id)));
+  selJanela.value = JANELAS[idxJanela].id;
+}
+
+function setLoading(on){
+  btnRecarregar.disabled = !!on;
+  btnRecarregar.textContent = on ? 'Carregando…' : 'Recarregar';
+  loadingPeriodo.classList.toggle('show', !!on);
+  loadingDia.classList.toggle('show', !!on);
+}
+
+function mediaSemZeros(arr){
+  const v=(arr||[]).map(Number).filter(x => !isNaN(x) && x>0);
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0;
+}
+const soma = arr => (arr||[]).map(Number).filter(v=>!isNaN(v)).reduce((a,b)=>a+b,0);
+
+function stripMediaFinalDias(dias, medias, pens){
+  if (!dias.length) return {dias, medias, pens};
+  const last = String(dias[dias.length-1]).toLowerCase();
+  if (last.startsWith('média')) {
+    dias=dias.slice(0,-1); medias=medias.slice(0,-1); pens=pens.slice(0,-1);
+  }
+  return {dias, medias, pens};
+}
+
+function preencherDiasComZeros(d, dtIniStr, dtFimStr){
+  const diasCompletos=[], mediasCompletas=[], pensCompletas=[];
+  const dtI=new Date(dtIniStr), dtF=new Date(dtFimStr);
+  for(let dAtual=new Date(dtI); dAtual<=dtF; dAtual.setDate(dAtual.getDate()+1)){
+    const iso=dAtual.toISOString().slice(0,10);
+    const idx=d.days.indexOf(iso);
+    if(idx>=0){
+      diasCompletos.push(iso); mediasCompletas.push(+d.avg[idx]||0); pensCompletas.push(+d.pen[idx]||0);
+    }else{
+      diasCompletos.push(iso); mediasCompletas.push(0); pensCompletas.push(0);
     }
+  }
+  return {dias:diasCompletos, medias:mediasCompletas, pens:pensCompletas};
+}
 
-    function setDatasPadrao(){
-      const pad = n => String(n).padStart(2,'0');
-      const hoje = new Date();
-      const ini = new Date(); ini.setDate(hoje.getDate());
-      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      const elIni = document.getElementById('dtIni');
-      const elFim = document.getElementById('dtFim');
-      if (elIni && !elIni.value) elIni.value = toISO(ini);
-      if (elFim && !elFim.value) elFim.value = toISO(hoje);
-    }
+const toLabelBR = iso => {
+  const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m? `${m[3]}/${m[2]}` : iso;
+};
 
-    /* =======================
-       FETCHS
-       ======================= */
-    async function fetchPeriodo(){
-      const dtIni = document.getElementById('dtIni').value;
-      const dtFim = document.getElementById('dtFim').value;
-      const perIni = document.getElementById('perIni').value;
-      thePerFim = document.getElementById('perFim').value;
+function ajustarLarguraCanvas(canvasId, labels, minWDesktop=700, minWMobile=900){
+  const canvas=document.getElementById(canvasId);
+  const wrap=canvas.parentElement;
+  const isMobile=window.innerWidth<=640;
+  const pxPorRotulo=isMobile?44:36;
+  const minW=isMobile?minWMobile:minWDesktop;
+  const w=Math.max(minW,labels.length*pxPorRotulo);
+  const fallbackH=isMobile?360:420;
+  const h=Math.max(fallbackH,wrap?wrap.clientHeight:0);
+  canvas.width=w; canvas.height=h; canvas.style.width=w+'px'; canvas.style.height=h+'px';
+}
 
-      const params = new URLSearchParams({
-        action: 'mediaDMResumo',
-        dtIni, dtFim, periodoIni: perIni, periodoFim: thePerFim
-      });
+Chart.register(ChartDataLabels);
 
-      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
-      const json = await resp.json();
-      if(!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter dados (período)');
-      return json; // {labels, values, counts, penalties}
-    }
+/* =========================
+   FETCHS
+========================= */
+async function fetchPeriodo(){
+  const params = new URLSearchParams({
+    action: 'mediaDMResumo',
+    dtIni: dtIni.value, dtFim: dtFim.value,
+    periodoIni: perIni.value || '', periodoFim: perFim.value || ''
+  });
+  const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+  const json = await resp.json();
+  if(!json.sucesso) throw new Error(json.mensagem || 'Falha ao obter dados (período)');
+  return json; // {labels, values, counts, penalties, sucesso:true}
+}
 
-    async function fetchDia(){
-      const dtIni = document.getElementById('dtIni').value;
-      const dtFim = document.getElementById('dtFim').value;
+async function fetchDia(){
+  const params=new URLSearchParams({action:'resumoDiarioDM', dtIni:dtIni.value, dtFim:dtFim.value});
+  const resp=await fetch(`${SCRIPT_URL}?${params.toString()}`);
+  const json=await resp.json();
+  return json&&json.sucesso ? json : {days:[], avg:[], pen:[]};
+}
 
-      const params = new URLSearchParams({
-        action: 'resumoDiarioDM',
-        dtIni, dtFim
-      });
+/* =========================
+   GRÁFICO POR PERÍODO
+========================= */
+function setTotaisPeriodo(media, penal){
+  tMediaPeriodo.textContent = `Média: ${Number(media||0).toFixed(0)}`;
+  tPenPeriodo.textContent   = `Penalidade: R$ ${Number(penal||0).toFixed(0)}`;
+}
 
-      const resp = await fetch(`${SCRIPT_URL}?${params.toString()}`);
-      const json = await resp.json();
-      if (json && json.sucesso) return json; // {days, avg, pen}
-      return { days: [], avg: [], pen: [] };
-    }
+// ======== GRÁFICO POR PERÍODO ========
+function desenharGraficoPeriodo(
+  labels,
+  values,
+  counts,
+  penalties,
+  highlightIdxs = [],      // índices que devem ficar em destaque (ex.: "Média" / "Média Dia")
+  rotateLine90 = false     // se true, gira os rótulos (datalabels) da linha 90º
+){
+  const isMobile = matchMedia('(max-width: 480px)').matches;
+  ajustarLarguraCanvas('graficoPeriodo', labels);
 
-    /* =======================
-       UTIL / UI
-       ======================= */
-    function setLoading(on){
-      const btn = document.getElementById('btnRecarregar');
-      const lp  = document.getElementById('loadingPeriodo');
-      const ld  = document.getElementById('loadingDia');
-      if(on){
-        btn.disabled = true; btn.textContent = 'Carregando…';
-        lp.classList.add('show'); ld.classList.add('show');
-      }else{
-        btn.disabled = false; btn.textContent = 'Recarregar';
-        lp.classList.remove('show'); ld.classList.remove('show');
-      }
-    }
+  const ctx = graficoPeriodo.getContext('2d');
+  if (window._chartPeriodo) window._chartPeriodo.destroy();
 
-    function setTotaisPeriodo(media, penal){
-      document.getElementById('tMediaPeriodo').textContent = `Média: ${Number(media||0).toFixed(0)}`;
-      document.getElementById('tPenPeriodo').textContent   = `Penalidade: R$ ${Number(penal||0).toFixed(0)}`;
-    }
-    function setTotaisDia(media, penal){
-      document.getElementById('tMediaDia').textContent = `Média: ${Number(media||0).toFixed(0)}`;
-      document.getElementById('tPenDia').textContent   = `Penalidade: R$ ${Number(penal||0).toFixed(0)}`;
-    }
+  const baseBar  = '#3db7ac';
+  const destaque = '#0b4c59';
+  const colors   = labels.map((_, i) => highlightIdxs.includes(i) ? destaque : baseBar);
 
-    function mediaSemZeros(arr){
-      const v = (arr||[]).map(Number).filter(x => !isNaN(x) && x>0);
-      return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0;
-    }
+  const maxBar = Math.max(META + 2, Math.ceil(Math.max(...values, META) + 1));
 
-    /* =======================
-       RENDER HELPERS
-       ======================= */
-    function ajustarLarguraCanvas(canvasId, labels, minWDesktop=700, minWMobile=900){
-      const canvas = document.getElementById(canvasId);
-      const wrap   = canvas.parentElement;
-
-      const isMobile   = window.innerWidth <= 640;
-      const pxPorRotulo = isMobile ? 44 : 36;   /* garante todos rótulos visíveis */
-      const minW       = isMobile ? minWMobile : minWDesktop;
-
-      const w = Math.max(minW, labels.length * pxPorRotulo);
-      const fallbackH = isMobile ? 360 : 420;
-      const h = Math.max(fallbackH, wrap ? wrap.clientHeight : 0);
-
-      canvas.width  = w;
-      canvas.height = h;
-      canvas.style.width  = w + 'px';
-      canvas.style.height = h + 'px';
-    }
-
-    Chart.register(ChartDataLabels);
-
-    /* =======================
-       GRÁFICO POR PERÍODO
-       ======================= */
-    function desenharGraficoPeriodo(labels, values, counts, penalties){
-      const isMobile = window.matchMedia('(max-width: 480px)').matches;
-      ajustarLarguraCanvas('graficoPeriodo', labels);
-
-      const ctx = document.getElementById('graficoPeriodo').getContext('2d');
-      if (window._chartPeriodo) window._chartPeriodo.destroy();
-
-      values    = (values||[]).map(v => +v || 0);
-      counts    = (counts||[]).map(v => +v || 0);
-      penalties = (penalties||[]).map(v => +v || 0);
-
-      const baseBar   = '#3db7ac';
-      const destaque  = '#0b4c59';
-      const colors    = labels.map(l => l === 'Média Dia' ? destaque : baseBar);
-      const isMediaDia = (c) => c.chart.data.labels[c.dataIndex] === 'Média Dia';
-
-      const maxBar = Math.max(META + 2, Math.ceil(Math.max(...values, META) + 1));
-
-      window._chartPeriodo = new Chart(ctx, {
-        data: {
-          labels,
-          _counts: counts,
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Média Empilhadeiras',
-              yAxisID: 'y',
-              data: values,
-              backgroundColor: colors,
-              borderColor: colors,
-              borderWidth: 1,
-              maxBarThickness: isMobile ? 22 : 28,
-              categoryPercentage: isMobile ? 0.78 : 0.82,
-              barPercentage:       isMobile ? 0.78 : 0.82,
-              datalabels: {
-                display: (c) => c.datasetIndex === 0,
-                color:   (c) => isMediaDia(c) ? '#fff' : '#083735',
-                anchor:  'center',
-                align:   'center',
-                offset:  (c) => isMediaDia(c) ? 0 : -4,
-                clamp: true,
-                formatter: (v) => Math.round(v),
-                font: { weight: 800, size: isMobile ? 8 : 14 }
-              }
-            },
-            {
-              type: 'line',
-              label: `Meta ${META}`,
-              yAxisID: 'y',
-              data: new Array(labels.length).fill(META),
-              borderColor: 'red',
-              borderWidth: 2,
-              borderDash: [4,3],
-              pointRadius: 0,
-              fill: false,
-              datalabels: { display: false }
-            },
-            {
-              type: 'line',
-              label: 'Penalidades (Σ)',
-              yAxisID: 'y1',
-              data: penalties,
-              borderColor: '#183153',
-              backgroundColor: '#183153',
-              borderWidth: 2,
-              tension: 0.25,
-              pointRadius: 3,
-              pointHoverRadius: 4,
-              datalabels: {
-                display: true,
-                color: '#183153',
-                anchor: 'end',
-                align: 'top',
-                rotation: -90,
-                offset: 2,
-                formatter: (v) => `R$ ${Math.round(v)}`,
-                font: { weight: 800, size: isMobile ? 8 : 10 }
-              }
-            }
-          ]
+  window._chartPeriodo = new Chart(ctx, {
+    data:{
+      labels,
+      _counts: counts,
+      datasets:[
+        {
+          type:'bar', label:'Média Empilhadeiras', yAxisID:'y',
+          data:values, backgroundColor:colors, borderColor:colors, borderWidth:1,
+          maxBarThickness:isMobile?22:28, categoryPercentage:isMobile?0.78:0.82, barPercentage:isMobile?0.78:0.82,
+          datalabels:{
+            display:true,
+            color:(c)=> highlightIdxs.includes(c.dataIndex) ? '#fff' : '#083735',
+            anchor:'center', align:'center',
+            offset:(c)=> highlightIdxs.includes(c.dataIndex) ? 0 : -4,
+            formatter:(v)=>Math.round(v), font:{weight:800, size:isMobile?8:10}, clamp:true
+          }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-              labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, font:{size:isMobile?11:14} }
-            },
-            tooltip: {
-              callbacks: {
-                label: (c) => {
-                  if (c.dataset.yAxisID === 'y1') return ` Penalidades: ${c.parsed.y}`;
-                  if (c.dataset.type === 'line')   return `${c.dataset.label}`;
-                  return ` Média: ${c.parsed.y}`;
-                },
-                afterLabel: (c) => {
-                  if (c.dataset.yAxisID === 'y1') return '';
-                  const q = (c.chart.data._counts || [])[c.dataIndex] || 0;
-                  return q ? ` Registros: ${q}` : '';
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: {
-                autoSkip: false,
-                maxRotation: isMobile ? 90 : 45,
-                minRotation: isMobile ? 90 : 45,
-                font: { size: isMobile ? 8 : 11 },
-                callback: function(value){ return this.getLabelForValue(value); }
-              },
-              grid: { display: false }
-            },
-            y: {
-              beginAtZero: true, display:false,
-              suggestedMax: maxBar,
-              min: 0,
-              max: 20,
-              title: { display: true, text: 'Média' },
-              ticks: { precision: 0 }
-            },
-            y1: {
-              position: 'right', display:false,
-              min: -190000,
-              max:  70000,
-              grid: { drawOnChartArea: false },
-              title: { display: false, text: 'Penalidades (Σ)' },
-              ticks: { precision: 0 }
-            }
-          },
-          layout: { padding: { top: 6, right: 10, bottom: isMobile ? 64 : 52, left: 6 } }
-        }
-      });
-
-      window._chartPeriodo.options.scales.x.ticks.minRotation = 90;
-      window._chartPeriodo.options.scales.x.ticks.maxRotation = 90;
-      window._chartPeriodo.options.scales.x.ticks.autoSkip   = false;
-      window._chartPeriodo.update();
-    }
-
-    /* =======================
-       GRÁFICO POR DIA
-       ======================= */
-    function desenharGraficoDia(labelsDias, mediasDia, penalDia){
-      const isMobile = window.matchMedia('(max-width: 480px)').matches;
-      ajustarLarguraCanvas('graficoDia', labelsDias, 800, 900);
-
-      const ctx = document.getElementById('graficoDia').getContext('2d');
-      if (window._chartDia) window._chartDia.destroy();
-
-      mediasDia = (mediasDia||[]).map(v => +v || 0);
-      penalDia  = (penalDia ||[]).map(v => +v || 0);
-
-      const baseBar   = '#3db7ac';
-      const destaque  = '#0b4c59';
-      const isMedia = (lbl, i) => lbl === 'Média' || i === labelsDias.length - 1;
-      const colorsDia = labelsDias.map((lbl, i) => isMedia(lbl, i) ? destaque : baseBar);
-
-      const maxBar = Math.max(META + 2, Math.ceil(Math.max(...mediasDia, META) + 1));
-
-      window._chartDia = new Chart(ctx, {
-        data: {
-          labels: labelsDias,
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Média Empilhadeiras (dia)',
-              yAxisID: 'y',
-              data: mediasDia,
-              backgroundColor: colorsDia,
-              borderColor: colorsDia,
-              borderWidth: 1,
-              maxBarThickness: isMobile ? 22 : 28,
-              datalabels: {
-                display: true,
-                color: (c) => {
-                  const i = c.dataIndex, lbl = c.chart.data.labels[i];
-                  return (lbl === 'Média' || i === c.chart.data.labels.length -1) ? '#fff' : '#083735';
-                },
-                anchor:'center', align:'center', offset:0,
-                formatter: (v)=>Math.round(v),
-                font:{weight:800, size:isMobile?8:14}
-              }
-            },
-            {
-              type: 'line',
-              label: `Meta ${META}`,
-              yAxisID: 'y',
-              data: new Array(labelsDias.length).fill(META),
-              borderColor: 'red',
-              borderWidth: 2,
-              borderDash: [4,3],
-              pointRadius: 0,
-              fill: false,
-              datalabels: { display:false }
-            },
-            {
-              type: 'line',
-              label: 'Penalidades (Σ)',
-              yAxisID: 'y1',
-              data: penalDia,
-              borderColor: '#183153',
-              backgroundColor: '#183153',
-              borderWidth: 2,
-              tension: 0.25,
-              pointRadius: 3,
-              pointHoverRadius: 4,
-              datalabels: {
-                display:true,
-                color:'#183153',
-                anchor:'end', align:'top', offset:2,
-                rotation: -90,
-                formatter: (v) => `R$ ${Math.round(v)}`,
-                font:{weight:800, size:isMobile?8:10}
-              }
-            }
-          ]
+        {
+          type:'line', label:`Meta ${META}`, yAxisID:'y',
+          data:new Array(labels.length).fill(META),
+          borderColor:'red', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false,
+          datalabels:{display:false}
         },
-        options: {
-          responsive:true, maintainAspectRatio:false,
-          plugins:{
-            legend:{ display:true, position:'top',
-              labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, font:{size:isMobile?11:14} }
-            },
-            tooltip:{
-              callbacks:{
-                label:(c)=>{
-                  if (c.dataset.yAxisID==='y1') return ` Penalidades: ${c.parsed.y}`;
-                  if (c.dataset.type==='line') return `${c.dataset.label}`;
-                  return ` Média: ${c.parsed.y}`;
-                }
-              }
-            }
-          },
-          scales:{
-            x:{
-              ticks:{
-                autoSkip:false,
-                maxRotation:isMobile?60:0,
-                minRotation:isMobile?60:0,
-                font:{ size:isMobile?9:11 }
-              },
-              grid:{ display:false }
-            },
-            y:{
-              beginAtZero:true, display:false,
-              min: 0,
-              max: 20,
-              suggestedMax:maxBar,
-              title:{ display:true, text:'Média' },
-              ticks:{ precision:0 }
-            },
-            y1:{
-              position:'right', display:false,
-              min: -190000,
-              max:  70000,
-              grid:{ drawOnChartArea:false },
-              title:{ display:false, text:'Penalidades (Σ)' },
-              ticks:{ precision:0 }
-            }
-          },
-          layout:{ padding:{ top:6, right:10, bottom:isMobile?64:44, left:6 } }
+        {
+          type:'line', label:'Penalidades (Σ)', yAxisID:'y1',
+          data:penalties, borderColor:'#183153', backgroundColor:'#183153',
+          borderWidth:2, tension:0.25, pointRadius:3, pointHoverRadius:4,
+          datalabels:{
+            display:true, color:'#183153', anchor:'end', align:'top',
+            rotation: rotateLine90 ? -90 : (isMobile ? -90 : 0),  // <<< 90º quando solicitado
+            offset:2,
+            formatter:(v)=>`R$ ${Math.round(v)}`, font:{weight:800, size:isMobile?7:9}
+          }
         }
-      });
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:true, position:'top',
+          labels:{ usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, font:{size:isMobile?11:14} }
+        },
+        tooltip:{
+          callbacks:{
+            label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}`
+                   : c.dataset.type==='line'    ? `${c.dataset.label}`
+                   : ` Média: ${c.parsed.y}`,
+            afterLabel:(c)=> c.dataset.yAxisID==='y1' ? ''
+                           : ((c.chart.data._counts||[])[c.dataIndex]||0) ? ` Registros: ${(c.chart.data._counts||[])[c.dataIndex]}` : ''
+          }
+        }
+      },
+      scales:{
+        x:{ ticks:{autoSkip:false, maxRotation:90, minRotation:90, font:{size:isMobile?8:11}}, grid:{display:false} },
+        y:{ beginAtZero:true, display:false, min:0, max:20, suggestedMax:maxBar, ticks:{precision:0} },
+        y1:{ position:'right', display:false, min:-190000, max:70000, grid:{drawOnChartArea:false}, ticks:{precision:0} }
+      },
+      layout:{ padding:{ top:6, right:10, bottom:isMobile?64:52, left:6 } }
+    }
+  });
+}
+
+function renderPeriodo(){
+  const p = _cachePeriodo; if (!p) return;
+
+  const labels = (p.labels||[]).slice();
+  const values = (p.values||[]).map(v=>+v||0);
+  const counts = (p.counts||[]).map(v=>+v||0);
+  const pens   = (p.penalties||[]).map(v=>+v||0);
+
+  const j = JANELAS[idxJanela];
+
+  if (j.all){
+    // Em "Todos os períodos (24)" -> sem inserir barra extra,
+    // mas destacamos a barra de "Média Dia" (ou "Média") SE existir.
+    const idxMedia = labels.findIndex(l => String(l).toLowerCase().includes('média'));
+    const highlights = idxMedia >= 0 ? [idxMedia] : [];
+    desenharGraficoPeriodo(labels, values, counts, pens, highlights, /*rotateLine90*/ true);
+    setTotaisPeriodo(mediaSemZeros(values), soma(pens));
+  } else {
+    // Janelas 6h: calculamos média da janela e destacamos a última barra
+    const fatL = labels.slice(j.ini, j.fim);
+    const fatV = values.slice(j.ini, j.fim);
+    const fatC = counts.slice(j.ini, j.fim);
+    const fatP = pens.slice(j.ini, j.fim);
+
+    const m6 = +mediaSemZeros(fatV).toFixed(2);
+    const p6 = soma(fatP);
+
+    fatL.push('Média');
+    fatV.push(m6);
+    fatC.push(fatV.filter(v=>v>0).length);
+    fatP.push(p6);
+
+    const lastIdx = fatL.length - 1;
+    desenharGraficoPeriodo(fatL, fatV, fatC, fatP, [lastIdx], /*rotateLine90*/ false);
+    setTotaisPeriodo(m6, p6);
+  }
+  selJanela.value = j.id;
+}
+
+/* =========================
+   GRÁFICO POR DIA
+========================= */
+function setTotaisDia(mediaJanela, penalPeriodo, kDias=null, mediaAcumulada=null){
+  const sufixo = kDias==null ? '' : (kDias===1 ? ' (1 dia)' : ` (${kDias} dias)`);
+  document.getElementById('tMediaDia').textContent  = `Média${sufixo}: ${Number(mediaJanela||0).toFixed(0)}`;
+  document.getElementById('tMediaAcum').textContent = `Média acumulada: ${Number((mediaAcumulada ?? mediaJanela) || 0).toFixed(0)}`;
+  document.getElementById('tPenDia').textContent    = `Penalidade: R$ ${Number(penalPeriodo||0).toFixed(0)}`;
+}
+
+// rotX90 = gira os rótulos do eixo X
+// rotLine90 = gira os datalabels da SÉRIE DE LINHA (Penalidades)
+// rotX90 = gira os rótulos do eixo X
+// rotLine90 = gira os datalabels da SÉRIE DE LINHA (Penalidades)
+function desenharGraficoDia(labelsDias, mediasDia, penalDia, highlights = [], rotX90 = false, rotLine90 = false){
+  const isMobile = matchMedia('(max-width: 480px)').matches;
+  ajustarLarguraCanvas('graficoDia', labelsDias, 800, 900);
+
+  const ctx = graficoDia.getContext('2d');
+  if (window._chartDia) window._chartDia.destroy();
+
+  const baseBar = '#3db7ac', destaque = '#0b4c59';
+  const colors = labelsDias.map((_,i)=> highlights.includes(i) ? destaque : baseBar);
+
+  window._chartDia = new Chart(ctx,{
+    data:{ labels: labelsDias,
+      datasets:[
+        { type:'bar', label:'Média Empilhadeiras (dia)', yAxisID:'y',
+          data:mediasDia, backgroundColor:colors, borderColor:colors, borderWidth:1, maxBarThickness:isMobile?22:28,
+          datalabels:{ display:true, color:(c)=> highlights.includes(c.dataIndex)?'#fff':'#083735',
+            anchor:'center', align:'center', formatter:(v)=>Math.round(v), font:{weight:800,size:isMobile?8:10} } },
+        { type:'line', label:`Meta ${META}`, yAxisID:'y',
+          data:new Array(labelsDias.length).fill(META), borderColor:'red', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false,
+          datalabels:{display:false} },
+        { type:'line', label:'Penalidades (Σ)', yAxisID:'y1',
+          data:penalDia, borderColor:'#183153', backgroundColor:'#183153', borderWidth:2, tension:0.25, pointRadius:3,
+          datalabels:{ display:true, color:'#183153', anchor:'end', align:'top',
+            rotation: rotLine90 ? -90 : 0,
+            formatter:(v)=> `R$ ${Math.round(v)}`, font:{weight:800,size:isMobile?7:9} } }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:true,position:'top',
+                labels:{usePointStyle:true,pointStyle:'rectRounded',boxWidth:10,boxHeight:10,font:{size:isMobile?11:14}}},
+                tooltip:{callbacks:{label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}`
+                                               : c.dataset.type==='line' ? `${c.dataset.label}` : ` Média: ${c.parsed.y}`}} },
+      scales:{ x:{ticks:{autoSkip:false,maxRotation:rotX90?90:0,minRotation:rotX90?90:0,font:{size:isMobile?8:11}},grid:{display:false}},
+               y:{beginAtZero:true,display:false,min:0,max:20,ticks:{precision:0}},
+               y1:{position:'right',display:false,min:-190000,max:70000,grid:{drawOnChartArea:false}} },
+      layout:{padding:{top:6,right:10,bottom:isMobile?64:44,left:6}}
+    }
+  });
+}
+
+function renderDia(){
+  const d = _cacheDia; if(!d) return;
+
+  // Garante todos os dias do intervalo selecionado (lacunas = 0)
+  let { dias, medias, pens } = preencherDiasComZeros(d, dtIni.value, dtFim.value);
+  ({dias,medias,pens} = stripMediaFinalDias(dias,medias,pens));
+
+  const rot  = dias.map(toLabelBR);
+  const modo = visaoDia.value;
+
+  // Estatísticas do período completo (para "Média acumulada")
+  const mediaAcumulada = +mediaSemZeros(medias).toFixed(2);
+  const penalPeriodo   = soma(pens);
+
+  // === Modo "Dia" (apenas o último do período) ===
+  if (modo === '1'){
+    const i = rot.length - 1;
+    desenharGraficoDia([rot[i]],[medias[i]],[pens[i]], /*highlights*/ [], /*rot90*/ false);
+    setTotaisDia(medias[i], penalPeriodo, 1, mediaAcumulada);
+    navJanelaDias.style.display = 'none';
+    return;
+  }
+
+  // === Modo "Últimos 30 dias": SEM setas, rótulos X em 90°, mostra todos ===
+  if (modo === '30'){
+    const N = Math.min(30, rot.length);
+    const start = Math.max(0, rot.length - N);
+
+    let rotN = rot.slice(start);
+    let medN = medias.slice(start);
+    let penN = pens.slice(start);
+
+    const mediaJanela = +mediaSemZeros(medN).toFixed(2);
+
+    // Barras extras (destacadas)
+    const highlights = [];
+    if (rotN.length >= 2){
+      rotN.push(`Média ${rotN.length} dias`);
+      medN.push(mediaJanela);
+      penN.push(soma(penN));
+      highlights.push(rotN.length - 1);
+
+      rotN.push('Média acumulada');
+      medN.push(mediaAcumulada);
+      penN.push(penalPeriodo);
+      highlights.push(rotN.length - 1);
     }
 
-    /* =======================
-       CARREGAR TUDO
-       ======================= */
-    async function carregar(){
-      setLoading(true);
-      try{
-        const [p, d] = await Promise.all([ fetchPeriodo(), fetchDia() ]);
+    // Rotaciona em 90° SOMENTE no 30 dias
+    desenharGraficoDia(rotN, medN, penN, highlights, true, true);
+    setTotaisDia(mediaJanela, penalPeriodo, rotN.length - highlights.length, mediaAcumulada);
 
-        // ===== PERÍODO =====
-        const labelsP = (p.labels || []).slice();
-        const valuesP = (p.values || []).map(v=>+v||0);
-        const countsP = (p.counts || []).map(v=>+v||0);
-        const pensP   = (p.penalties || []).map(v=>+v||0);
+    // Esconde pager
+    navJanelaDias.style.display = 'none';
+    return;
+  }
 
-        // Se o backend não mandar "Média Dia" (hoje manda), acrescenta no front
-        if (!labelsP.includes('Média Dia')) {
-          labelsP.push('Média Dia');
-          valuesP.push(+mediaSemZeros(valuesP).toFixed(2));
-          countsP.push(valuesP.filter(v=>v>0).length);
-          pensP.push(pensP.reduce((a,b)=>a+b,0));
-        }
-        desenharGraficoPeriodo(labelsP, valuesP, countsP, pensP);
-        setTotaisPeriodo(valuesP[valuesP.length-1], pensP[pensP.length-1]);
+  // === Modo "Visão geral (todos)": COM setas (pager), sem rotação 90° ===
+  if (modo === 'all'){
+    const Ntotal = rot.length;
+    const N = Ntotal;
 
-        // ===== DIA =====
-        const diasISO = d.days || [];
-        let mediasDia = (d.avg || []).map(v => +v || 0);
-        let penalDia  = (d.pen || []).map(v => +v || 0);
+    // Limites e posição da janela navegável
+    const startLim = Math.max(0, Ntotal - N);
+    const maxStart = startLim + Math.max(0, N - WINDOW_DIAS);
+    if (_diaPageStart < startLim) _diaPageStart = startLim;
+    if (_diaPageStart > maxStart) _diaPageStart = maxStart;
 
-        // Converte YYYY-MM-DD -> DD/MM
-        const diasBr = diasISO.map(s=>{
-          const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
-          return m ? `${m[3]}/${m[2]}` : s;
-        });
-
-        // Se backend mandou "Média Dias", renomeia para "Média"; se não mandou, adiciona
-        if (diasBr.length && (diasBr[diasBr.length-1] === 'Média Dias' || diasBr[diasBr.length-1] === 'Média')) {
-          diasBr[diasBr.length-1] = 'Média';
-        } else {
-          const mediaTotal = +mediaSemZeros(mediasDia).toFixed(2);
-          const penTotal   = penalDia.reduce((a,b)=>a+b,0);
-          diasBr.push('Média');
-          mediasDia.push(mediaTotal);
-          penalDia.push(penTotal);
-        }
-
-        desenharGraficoDia(diasBr, mediasDia, penalDia);
-
-        // totalizadores (usa último ponto)
-        const mediaUlt = mediasDia[mediasDia.length-1] || 0;
-        const penUlt   = penalDia[penalDia.length-1]   || 0;
-        setTotaisDia(mediaUlt, penUlt);
-
-      }catch(err){
-        console.error(err);
-        alert('Não foi possível carregar os dados.');
-      }finally{
-        setLoading(false);
-      }
+    const showPager = N > WINDOW_DIAS;
+    navJanelaDias.style.display = showPager ? '' : 'none';
+    if (showPager){
+      const s = _diaPageStart - startLim;
+      const e = Math.min(s + WINDOW_DIAS - 1, N - 1);
+      txtJanelaDias.textContent = `Exibindo ${s+1}–${e+1} de ${N}`;
     }
 
-    document.getElementById('btnRecarregar').addEventListener('click', carregar);
+    const start = showPager ? _diaPageStart : Math.max(0, startLim + (N - WINDOW_DIAS));
+    const end   = (N <= WINDOW_DIAS) ? (startLim + N) : Math.min(start + WINDOW_DIAS, startLim + N);
 
-    // init
-    initPeriodos();
-    setDatasPadrao();
-    carregar();
-  </script>
+    let rotN = rot.slice(start, end);
+    let medN = medias.slice(start, end);
+    let penN = pens.slice(start, end);
+
+    const mediaJanela = +mediaSemZeros(medN).toFixed(2);
+
+    // Barras extras (destacadas)
+    const highlights = [];
+    if (rotN.length >= 2){
+      rotN.push(`Média ${rotN.length} dias`);
+      medN.push(mediaJanela);
+      penN.push(soma(penN));
+      highlights.push(rotN.length - 1);
+
+      rotN.push('Média acumulada');
+      medN.push(mediaAcumulada);
+      penN.push(penalPeriodo);
+      highlights.push(rotN.length - 1);
+    }
+
+    // Sem rotação de rótulos no "all"
+    desenharGraficoDia(rotN, medN, penN, highlights, true, true);
+    setTotaisDia(mediaJanela, penalPeriodo, rotN.length - highlights.length, mediaAcumulada);
+    return;
+  }
+
+  // === Modos "Últimos 5 / 15 dias" (sem setas, sem rotação 90°) ===
+  const N = Number(modo);
+  const start = Math.max(0, rot.length - N);
+  let rotN = rot.slice(start);
+  let medN = medias.slice(start);
+  let penN = pens.slice(start);
+
+  if (rotN.length <= 1){
+    desenharGraficoDia(rotN, medN, penN, [], /*rot90*/ false);
+    setTotaisDia(mediaSemZeros(medN), soma(penN), rotN.length, mediaAcumulada);
+    navJanelaDias.style.display = 'none';
+    return;
+  }
+
+  const mN = +mediaSemZeros(medN).toFixed(2);
+  const pN = soma(penN);
+  rotN.push(`Média ${rotN.length} dias`);
+  medN.push(mN);
+  penN.push(pN);
+
+  desenharGraficoDia(rotN, medN, penN, [rotN.length - 1], /*rot90*/ false);
+  setTotaisDia(mN, pN, rotN.length - 1, mediaAcumulada);
+  navJanelaDias.style.display = 'none';
+}
+
+/* =========================
+   CARREGAR TUDO
+========================= */
+async function carregar(){
+  setLoading(true);
+  try{
+    const [p, d] = await Promise.all([fetchPeriodo(), fetchDia()]);
+    // normaliza
+    p.values=(p.values||[]).map(v=>+v||0);
+    p.counts=(p.counts||[]).map(v=>+v||0);
+    p.penalties=(p.penalties||[]).map(v=>+v||0);
+    _cachePeriodo = p;
+
+    d.avg=(d.avg||[]).map(v=>+v||0);
+    d.pen=(d.pen||[]).map(v=>+v||0);
+    _cacheDia = d;
+
+    renderPeriodo();
+    renderDia();
+  }catch(e){
+    console.error(e);
+    alert('Não foi possível carregar os dados.');
+  }finally{
+    setLoading(false);
+  }
+}
+
+/* =========================
+   EVENTOS
+========================= */
+btnRecarregar.addEventListener('click', carregar);
+
+// Período: janelas 6h / all
+btnPrevJan.addEventListener('click', ()=>{
+  idxJanela = (idxJanela + JANELAS.length - 1) % JANELAS.length;
+  selJanela.value = JANELAS[idxJanela].id;
+  renderPeriodo();
+});
+btnNextJan.addEventListener('click', ()=>{
+  idxJanela = (idxJanela + 1) % JANELAS.length;
+  selJanela.value = JANELAS[idxJanela].id;
+  renderPeriodo();
+});
+selJanela.addEventListener('change', ()=>{
+  const i = JANELAS.findIndex(j=>j.id===selJanela.value);
+  idxJanela = i>=0 ? i : 0;
+  renderPeriodo();
+});
+
+// Dia: troca de modo (Dia/5/15/30/All)
+visaoDia.addEventListener('change', ()=>{
+  // reset do pager quando muda o modo
+  _diaPageStart = 0;
+  renderDia();
+});
+// setinhas para trocar a opção do select (Dia/5/15/30/All)
+btnPrevDiaOpt.addEventListener('click', ()=>{
+  const i = Math.max(0, visaoDia.selectedIndex - 1);
+  visaoDia.selectedIndex = i;
+  _diaPageStart = 0;
+  visaoDia.dispatchEvent(new Event('change'));
+});
+btnNextDiaOpt.addEventListener('click', ()=>{
+  const i = Math.min(visaoDia.options.length - 1, visaoDia.selectedIndex + 1);
+  visaoDia.selectedIndex = i;
+  _diaPageStart = 0;
+  visaoDia.dispatchEvent(new Event('change'));
+});
+// pager dentro de 30/all
+btnPrevDiaWin.addEventListener('click', ()=>{
+  _diaPageStart = Math.max(0, _diaPageStart - WINDOW_DIAS);
+  renderDia();
+});
+btnNextDiaWin.addEventListener('click', ()=>{
+  _diaPageStart = _diaPageStart + WINDOW_DIAS; // limite é recalculado em renderDia()
+  renderDia();
+});
+
+/* =========================
+   BOOT
+========================= */
+initPeriodos();
+
+idxJanela = JANELAS.findIndex(j=> j.id === 'all');
+initSelecaoJanela();
+
+setDatasPadrao();
+
+//select de visão "últimos 30 dias"
+visaoDia.value = "30";
+
+carregar();
+</script>  
+
 </body>
 </html>
