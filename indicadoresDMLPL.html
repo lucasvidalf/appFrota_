@@ -704,7 +704,7 @@ function renderDia(){
   medN.push(mN);
   penN.push(pN);
 
-  desenharGraficoDia(rotN, medN, penN, [rotN.length - 1], /*rot90*/ false);
+  desenharGraficoDia(rotN, medN, penN, highlights, true, true);
   setTotaisDia(mN, pN, rotN.length - 1, mediaAcumulada);
   navJanelaDias.style.display = 'none';
 }
