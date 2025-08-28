@@ -397,6 +397,10 @@ const onFiltroChange = debounce(()=>{
   carregar();           // já chama o seu fetch + render
 }, 350);
 
+const fmtK = (v) => {
+   const n = Number(v) || 0;
+   return Math.abs(n) >= 1 ? `R$ ${(n/1000).toFixed(2)}k` : `R$ ${Math.round(n)}`;   
+};
 
 
 /* =========================
@@ -481,9 +485,8 @@ function desenharGraficoPeriodo(
             display:true, color:'#183153', anchor:'end', align:'top',
             rotation: rotateLine90 ? -90 : (isMobile ? -90 : 0),  // <<< 90º quando solicitado
             offset:2,
-            formatter:(v)=>`R$ ${Math.round(v)}`, font:{weight:800, size:isMobile?7:9}
-          }
-        }
+            formatter:(v)=> `R$ ${Math.round(v)}`, font:{weight:800,size:isMobile?7:9} } }       
+        
       ]
     },
     options:{
@@ -505,7 +508,7 @@ function desenharGraficoPeriodo(
       scales:{
         x:{ ticks:{autoSkip:false, maxRotation:90, minRotation:90, font:{weight:800, size:isMobile?8:10}}, grid:{display:false} },
         y:{ beginAtZero:true, display:false, min:0, max:20, suggestedMax:maxBar, ticks:{precision:0} },
-        y1:{ position:'right', display:false, min:-190000, max:70000, grid:{drawOnChartArea:false}, ticks:{precision:0} }
+        y1:{ position:'right', display:false, min:-5000000,max:2000000, grid:{drawOnChartArea:false}, ticks:{precision:0} }
       },
       layout:{ padding:{ top:6, right:10, bottom:isMobile?64:52, left:6 } }
     }
@@ -557,7 +560,7 @@ function renderPeriodo(){
 function setTotaisDia(mediaJanela, penalPeriodo, kDias=null, mediaAcumulada=null){
   const sufixo = kDias==null ? '' : (kDias===1 ? ' (1 dia)' : ` (${kDias} dias)`);
   document.getElementById('tMediaDia').textContent  = `Média${sufixo}: ${Number(mediaJanela||0).toFixed(0)}`;
-  document.getElementById('tMediaAcum').textContent = `Média acumulada: ${Number((mediaAcumulada ?? mediaJanela) || 0).toFixed(0)}`;
+  document.getElementById('tMediaAcum').textContent = `Média ACM: ${Number((mediaAcumulada ?? mediaJanela) || 0).toFixed(0)}`;
   document.getElementById('tPenDia').textContent    = `Penalidade: R$ ${Number(penalPeriodo||0).toFixed(0)}`;
 }
 
@@ -589,7 +592,8 @@ function desenharGraficoDia(labelsDias, mediasDia, penalDia, highlights = [], ro
           data:penalDia, borderColor:'#183153', backgroundColor:'#183153', borderWidth:2, tension:0.25, pointRadius:3,
           datalabels:{ display:true, color:'#183153', anchor:'end', align:'top',
             rotation: rotLine90 ? -90 : 0,
-            formatter:(v)=> `R$ ${Math.round(v)}`, font:{weight:800,size:isMobile?7:9} } }
+            formatter:(v)=> `R$ ${Math.round(v)}`, font:{weight:800,size:isMobile?7:9} } }       
+        
       ]
     },
     options:{
@@ -600,7 +604,7 @@ function desenharGraficoDia(labelsDias, mediasDia, penalDia, highlights = [], ro
                                                : c.dataset.type==='line' ? `${c.dataset.label}` : ` Média: ${c.parsed.y}`}} },
       scales:{ x:{ticks:{autoSkip:false,maxRotation:rotX90?90:0,minRotation:rotX90?90:0,font:{weight:800, size:isMobile?8:10}},grid:{display:false}},
                y:{beginAtZero:true,display:false,min:0,max:20,ticks:{precision:0}},
-               y1:{position:'right',display:false,min:-190000,max:70000,grid:{drawOnChartArea:false}} },
+               y1:{position:'right',display:false,min:-5000000,max:2000000,grid:{drawOnChartArea:false}} },
       layout:{padding:{top:6,right:10,bottom:isMobile?64:44,left:6}}
     }
   });
