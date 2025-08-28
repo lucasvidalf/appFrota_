@@ -108,7 +108,7 @@
     transition:filter .15s ease;
   }
   .btn:hover{ filter:brightness(1.05) }
-  .btn.secondary{ background:#93b8b5; color:#062f2c }
+  .btn.secondary{ display:none; background:#93b8b5; color:#062f2c }
   .link-btn{
     text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
     border-radius:12px; padding:12px 14px; font-weight:800; background:var(--brand-dark); color:#fff;
@@ -375,6 +375,30 @@ function ajustarLarguraCanvas(canvasId, labels, minWDesktop=700){
 
 Chart.register(ChartDataLabels);
 
+function debounce (fn, wait=300){
+   let t;
+   return (...args)=>{ clearTimeout(t); t = setTimeout( () => fn (...args), wait); };
+}
+
+function normalizarIntervalo (){
+  const i = new Date(dtIni.value);
+  const f = new Date (dtFim.value);
+  if (dtIni.value && dtFim.value && i > f){
+  
+  const tmp = dtIni.value;
+  dtIni.value = dtFim.value;
+  dtFim.value = tmp;
+  }
+}
+
+// um único handler para mudanças de filtro
+const onFiltroChange = debounce(()=>{
+  normalizarIntervalo();
+  carregar();           // já chama o seu fetch + render
+}, 350);
+
+
+
 /* =========================
    FETCHS
 ========================= */
@@ -479,7 +503,7 @@ function desenharGraficoPeriodo(
         }
       },
       scales:{
-        x:{ ticks:{autoSkip:false, maxRotation:90, minRotation:90, font:{weight:800, size:isMobile?8:11}}, grid:{display:false} },
+        x:{ ticks:{autoSkip:false, maxRotation:90, minRotation:90, font:{weight:800, size:isMobile?8:10}}, grid:{display:false} },
         y:{ beginAtZero:true, display:false, min:0, max:20, suggestedMax:maxBar, ticks:{precision:0} },
         y1:{ position:'right', display:false, min:-190000, max:70000, grid:{drawOnChartArea:false}, ticks:{precision:0} }
       },
@@ -574,7 +598,7 @@ function desenharGraficoDia(labelsDias, mediasDia, penalDia, highlights = [], ro
                 labels:{usePointStyle:true,pointStyle:'rectRounded',boxWidth:10,boxHeight:10,font:{size:isMobile?11:14}}},
                 tooltip:{callbacks:{label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}`
                                                : c.dataset.type==='line' ? `${c.dataset.label}` : ` Média: ${c.parsed.y}`}} },
-      scales:{ x:{ticks:{autoSkip:false,maxRotation:rotX90?90:0,minRotation:rotX90?90:0,font:{weight:800, size:isMobile?8:11}},grid:{display:false}},
+      scales:{ x:{ticks:{autoSkip:false,maxRotation:rotX90?90:0,minRotation:rotX90?90:0,font:{weight:800, size:isMobile?8:10}},grid:{display:false}},
                y:{beginAtZero:true,display:false,min:0,max:20,ticks:{precision:0}},
                y1:{position:'right',display:false,min:-190000,max:70000,grid:{drawOnChartArea:false}} },
       layout:{padding:{top:6,right:10,bottom:isMobile?64:44,left:6}}
@@ -789,6 +813,19 @@ btnNextDiaWin.addEventListener('click', ()=>{
   _diaPageStart = _diaPageStart + WINDOW_DIAS; // limite é recalculado em renderDia()
   renderDia();
 });
+
+// Atualiza automaticamente ao mudar datas
+dtIni.addEventListener('change', onFiltroChange);
+dtFim.addEventListener('change', onFiltroChange);
+
+// Em alguns navegadores mobile o <input type="date"> dispara 'input' antes do 'change'
+dtIni.addEventListener('input', onFiltroChange);
+dtFim.addEventListener('input', onFiltroChange);
+
+// Se quiser que trocar período inicial/final também recarregue:
+perIni.addEventListener('change', onFiltroChange);
+perFim.addEventListener('change', onFiltroChange);
+
 
 /* =========================
    BOOT
