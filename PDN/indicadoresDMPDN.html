@@ -101,7 +101,7 @@
   .btn{ border:0; border-radius:12px; padding:12px 14px; font-weight:800; cursor:pointer;
        background:var(--brand-dark); color:#fff; box-shadow:0 6px 14px rgba(1,61,53,.18); transition:filter .15s ease; }
   .btn:hover{ filter:brightness(1.05) }
-  .btn.secondary{ background:#93b8b5; color:#062f2c }
+  .btn.secondary{ display:none; background:#93b8b5; color:#062f2c }
   .link-btn{ text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
     border-radius:12px; padding:12px 14px; font-weight:800; background:var(--brand-dark); color:#fff;
     box-shadow:0 6px 14px rgba(1,61,53,.18);
@@ -346,6 +346,33 @@
       setText('tPenDia',`Penalidade: R$ ${Math.round(+pen||0)}`);
     }
 
+    // evita disparar várias requisições ao mesmo tempo enquanto o usuário está escolhendo a data
+     function debounce(fn, wait=300){
+       let t; 
+       return (...args)=>{ clearTimeout(t); t = setTimeout(()=>fn(...args), wait); };
+     }
+
+     // garante dtIni <= dtFim (se inverter no calendário do iOS/Android)
+     function normalizarIntervalo(){
+       const i = new Date(dtIni.value);
+       const f = new Date(dtFim.value);
+       if (dtIni.value && dtFim.value && i > f){
+         // opção 1: troca as datas
+         const tmp = dtIni.value;
+         dtIni.value = dtFim.value;
+         dtFim.value = tmp;
+         // opção 2 (se preferir): só iguala
+         // dtFim.value = dtIni.value;
+       }
+     }
+
+   // um único handler para mudanças de filtro
+     const onFiltroChange = debounce(()=>{
+       normalizarIntervalo();
+       carregar();           // já chama o seu fetch + render
+     }, 350);
+
+
     // ========================
     // FETCH
     // ========================
@@ -415,7 +442,7 @@
                                        (c.dataset.type==='line'? c.dataset.label : ` ${c.dataset.label}: ${c.parsed.y}`)}}
           },
           scales:{
-            x:{ticks:{autoSkip:false,maxRotation:90,minRotation:90,font:{weight:800,size:isMobile?8:11}},grid:{display:false}},
+            x:{ticks:{autoSkip:false,maxRotation:90,minRotation:90,font:{weight:800,size:isMobile?8:10}},grid:{display:false}},
             y:{beginAtZero:true,min:0,max:Math.max(10,vmax),display:false,ticks:{precision:0}},
             y1:{position:'right',display:false,min:-120000,max:75000,grid:{drawOnChartArea:false},ticks:{precision:0}}
           },
@@ -492,7 +519,7 @@
                     tooltip:{callbacks:{label:(c)=> c.dataset.yAxisID==='y1' ? ` Penalidades: ${c.parsed.y}` :
                                                (c.dataset.type==='line'? c.dataset.label : ` ${c.dataset.label}: ${c.parsed.y}`)}} },
           scales:{
-            x:{ticks:{autoSkip:false,maxRotation:rotateX?90:0,minRotation:rotateX?90:0,font:{weight:800,size:isMobile?9:11}},grid:{display:false}},
+            x:{ticks:{autoSkip:false,maxRotation:rotateX?90:0,minRotation:rotateX?90:0,font:{weight:800,size:isMobile?8:10}},grid:{display:false}},
             y:{beginAtZero:true,min:0,max:Math.max(10,vmax),display:false,ticks:{precision:0}},
             y1:{position:'right',display:false,min:-120000,max:75000,grid:{drawOnChartArea:false},ticks:{precision:0}}
           },
@@ -649,9 +676,24 @@
     // Dia: modos + pager (só no "all")
     visaoDia.addEventListener('change', ()=>{ _diaPageStart=0; renderDia(); });
     btnPrevDiaOpt.addEventListener('click', ()=>{ visaoDia.selectedIndex=Math.max(0, visaoDia.selectedIndex-1); _diaPageStart=0; visaoDia.dispatchEvent(new Event('change')); });
-    btnNextDiaOpt.addEventListener('click', ()=>{ visaoDia.selectedIndex=Math.min(visaoDia.options.length-1, visaoDia.selectedIndex+1); _diaPageStart=0; visaoDia.dispatchEvent(new Event('change')); });
+    btnNextDiaOpt.addEventListener('click', ()=>{ visaoDia.selectedIndex=Math.min(visaoDia.options.length-1, visaoDia.selectedIndex+1); _diaPageStart=0; visaoDia.dispatchEvent(new Event    ('change')); });
     btnPrevDiaWin.addEventListener('click', ()=>{ _diaPageStart=Math.max(0, _diaPageStart-WINDOW_DIAS); renderDia(); });
     btnNextDiaWin.addEventListener('click', ()=>{ _diaPageStart=_diaPageStart+WINDOW_DIAS; renderDia(); });
+
+
+    // Atualiza automaticamente ao mudar datas
+   dtIni.addEventListener('change', onFiltroChange);
+   dtFim.addEventListener('change', onFiltroChange);
+
+   // Em alguns navegadores mobile o <input type="date"> dispara 'input' antes do 'change'
+   dtIni.addEventListener('input', onFiltroChange);
+   dtFim.addEventListener('input', onFiltroChange);
+
+   // Se quiser que trocar período inicial/final também recarregue:
+   perIni.addEventListener('change', onFiltroChange);
+   perFim.addEventListener('change', onFiltroChange);
+
+
 
     // ========================
     // BOOT
